@@ -2,6 +2,6 @@
 # `exports["."]`) and the Client bundle (lib/client.js, via `dsh.client`).
 - insert:
     - id: notebook
-      name: dsh-notebook
+      name: '@zmskco/dsh-notebook'
       config:
         rootDir: null

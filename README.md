@@ -11,7 +11,7 @@ DeepSeek Harness（DSH）插件：**工作区里的 markdown 笔记本** —— 
 发布到 npm 后，在 DSH 里安装这个 bundle：
 
 ```text
-安装 dsh-notebook 这个插件
+安装 @zmskco/dsh-notebook 这个插件
 ```
 
 （等价于让插件管理把这个包加进 profile 的依赖与 bundle 列表。）要求：DSH `^0.2.2-alpha.2`、Node `>=20`，声明在 `package.json` 的 `engines` 里，版本不符会被管理工具拒绝安装。装好后侧边栏出现「笔记本」。

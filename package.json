@@ -1,5 +1,5 @@
 {
-  "name": "dsh-notebook",
+  "name": "@zmskco/dsh-notebook",
   "version": "0.1.0",
   "description": "笔记本 (Notebook) — a markdown notebook for the DeepSeek Harness workspace: file tree, WYSIWYG editor, autosave and an embedded AI chat.",
   "icon": "./icon.svg",
@@ -82,5 +82,8 @@
     "prosemirror-view": "^1.42.8",
     "tsdown": "^0.22.2",
     "typescript": "^5.7.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
