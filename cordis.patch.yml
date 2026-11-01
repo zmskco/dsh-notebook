@@ -1,0 +1,7 @@
+# One row activates both halves: the Host plugin (lib/index.js, via the package
+# `exports["."]`) and the Client bundle (lib/client.js, via `dsh.client`).
+- insert:
+    - id: notebook
+      name: dsh-notebook
+      config:
+        rootDir: null

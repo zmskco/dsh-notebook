@@ -1,0 +1,86 @@
+{
+  "name": "dsh-notebook",
+  "version": "0.1.0",
+  "description": "笔记本 (Notebook) — a markdown notebook for the DeepSeek Harness workspace: file tree, WYSIWYG editor, autosave and an embedded AI chat.",
+  "icon": "./icon.svg",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zmskco/dsh-notebook.git"
+  },
+  "homepage": "https://github.com/zmskco/dsh-notebook#readme",
+  "bugs": {
+    "url": "https://github.com/zmskco/dsh-notebook/issues"
+  },
+  "type": "module",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon.svg": "./icon.svg",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/**/*.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "bundle",
+    "notebook",
+    "markdown",
+    "editor"
+  ],
+  "engines": {
+    "node": ">=20",
+    "dsh": "^0.2.2-alpha.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "scripts": {
+    "build": "npm run build:host && npm run build:client && npm run check:client",
+    "build:host": "tsc -p tsconfig.host.json",
+    "build:client": "tsdown",
+    "check:client": "node scripts/check-client.mjs",
+    "check:sandbox": "node scripts/check-sandbox.mjs",
+    "smoke": "node scripts/smoke-host.mjs",
+    "test": "npm run typecheck && npm run check:sandbox && npm run smoke",
+    "watch:client": "tsdown --watch",
+    "watch:host": "tsc -p tsconfig.host.json --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.host.json --noEmit && tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build && npm test",
+    "pack:check": "npm pack --dry-run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.0",
+    "prosemirror-commands": "^1.7.2",
+    "prosemirror-history": "^1.5.1",
+    "prosemirror-inputrules": "^1.5.1",
+    "prosemirror-keymap": "^1.2.3",
+    "prosemirror-model": "^1.25.12",
+    "prosemirror-schema-basic": "^1.2.5",
+    "prosemirror-schema-list": "^1.5.1",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-view": "^1.42.8",
+    "tsdown": "^0.22.2",
+    "typescript": "^5.7.0"
+  }
+}

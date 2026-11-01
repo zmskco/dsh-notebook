@@ -1,0 +1,16 @@
+# Flatten transitive dependencies into the top-level node_modules.
+#
+# tsdown loads its own modules through `import-without-cache`, whose resolver
+# does not realpath the importer: a dependency is looked up from
+# `node_modules/tsdown/dist/` rather than from its real location in pnpm's
+# content-addressable store, so every dependency tsdown has fails to resolve and
+# the Client build dies with "Cannot find package ...".
+#
+# That is a "the package is not reachable by walking up from the importer"
+# problem, and hoisting is the direct answer. This is a personal,
+# undistributed plugin, so pnpm's strict isolation buys nothing here.
+#
+# `shamefullyHoist` is preferred over `nodeLinker: hoisted` deliberately: the
+# latter abandons the store and installs every platform's optional binary,
+# while this keeps the store and hoists only what is actually installed.
+shamefullyHoist: true
