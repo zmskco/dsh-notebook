@@ -6,6 +6,12 @@ DeepSeek Harness（DSH）插件：**工作区里的 markdown 笔记本** —— 
 - **Client 半边**：侧边栏入口 + 三栏面板（目录 · 文档 · 对话）。
 - **没有工具、没有 skill、没有渲染管线**：面板编辑的就是工作区里的真实文件，模型用自己的 `read`/`write` 工具读写同一批文件。
 
+# 预览效果
+
+![预览效果](./assets/dsh-notebook1.png)
+
+![预览效果](./assets/dsh-notebook3.png)
+
 ## 安装（npm）
 
 发布到 npm 后，在 DSH 里安装这个 bundle：
