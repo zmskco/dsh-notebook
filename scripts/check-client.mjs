@@ -468,20 +468,43 @@ check('the reveal icon turns while it works', source.includes('@keyframes dsh-no
 check('the toolbar and tabs are pinned above a scrolling page',
   /\.dsh-notebook-editorHead\{[^}]*flex:none/.test(css)
   && /\.dsh-notebook-editor\{[^}]*flex:1[^}]*overflow:hidden/.test(css)
-  && /\.dsh-notebook-tabs\{[^}]*overflow-x:auto/.test(css)
+  && /\.dsh-notebook-tabs\{[^}]*min-height:33px/.test(css)
   && /\.dsh-notebook-tab\{[^}]*flex:none/.test(css), '')
 check('the drawn tab is the raised one',
-  // The drawn tab is a filled chip with a brand underline — the same mark the file's
-  // row in the tree uses — rather than a box that only differs by a border.
-  /\.dsh-notebook-tab\[data-active="true"\]\{[^}]*background:var\(--dsw-alias-bg-layer-1\)/.test(css)
-  && /\.dsh-notebook-tab\[data-active="true"\]\{[^}]*inset 0 -2px 0 0 var\(--dsw-alias-brand-primary\)/.test(css), '')
-// The header band: both columns open with a 44px row, so the directory heading and
-// the editor toolbar put their rules on the same line instead of two nearby ones.
-check('the two columns open with one header band',
+  // The drawn tab is the *paper* colour — the only place in the tinted band that is —
+  // with a brand bar along its top, so it opens straight into the page below it.
+  /\.dsh-notebook-tab\[data-active="true"\]\{[^}]*background:var\(--dsw-alias-bg-base\)/.test(css)
+  && /\.dsh-notebook-tab\[data-active="true"\]\{[^}]*inset 0 2px 0 0 var\(--dsw-alias-brand-primary\)/.test(css), '')
+check('the tab band is tinted and the drawn tab is a hole in it',
+  // The band is the only tinted strip; the drawn tab paints the paper back over it.
+  // Both halves are needed for the "joined to the page" reading to work.
+  /\.dsh-notebook-tabs\{[^}]*background:var\(--dsw-alias-bg-layer-1\)/.test(css)
+  && !/\.dsh-notebook-tab\[data-active="true"\]\{[^}]*border-bottom/.test(css), '')
+// The header band: both columns draw the same-height row, and the grip — which sits
+// *between* them and is 6px of empty space — carries its own 1px of the rule. Without
+// that, the line across the panel would visibly break at every drag handle.
+check('the two columns open with one header band, unbroken across the grips',
   /\.dsh-notebook-section\{[^}]*height:44px/.test(css)
-  && /\.dsh-notebook-toolbar\{[^}]*min-height:44px/.test(css)
+  && /\.dsh-notebook-toolbar\{[^}]*height:44px/.test(css)
   && /\.dsh-notebook-toolbar\{[^}]*border-bottom:1px solid/.test(css)
+  && /\.dsh-notebook-grip::after\{[^}]*top:43px/.test(css)
   && !/\.dsh-notebook-editorHead\{[^}]*border-bottom/.test(css), '')
+check('the toolbar has a fixed height, so a narrow column cannot move the header line',
+  // A `min-height` band grows when its contents wrap, which would push the rule down
+  // relative to the directory column's; a fixed height scrolls instead.
+  /\.dsh-notebook-toolbar\{[^}]*height:44px/.test(css)
+  && !/\.dsh-notebook-toolbar\{[^}]*min-height/.test(css), '')
+check('the page carries no frame of its own',
+  // The manuscript used to be a bordered, rounded card inside the panel — three
+  // nested rectangles where the writing surface should be one.
+  /\.dsh-notebook-doc\{[^}]*border:0/.test(css)
+  && /\.dsh-notebook-doc\{[^}]*border-radius:0/.test(css)
+  && /\.dsh-notebook-editor\{[^}]*padding:0/.test(css), '')
+check('the directory column does not scroll, so its heading stays put',
+  // Same shape as the editor: a fixed head over its own scrolling list. Both columns'
+  // headings must stay where the shared 44px line is drawn.
+  /\.dsh-notebook-side\{[^}]*overflow:hidden/.test(css)
+  && /\.dsh-notebook-scroll\{[^}]*overflow:auto/.test(css), '')
 check('the picker groups are trays, not a row of bordered boxes',
   /\.dsh-notebook-seg\{[^}]*border-radius:8px/.test(css)
   && /\.dsh-notebook-seg > button\.dsh-notebook-btn\{[^}]*border:0/.test(css)
@@ -491,8 +514,22 @@ check('every picker control is the same height',
   && /\.dsh-notebook-typebar \.dsh-notebook-select\{[^}]*height:28px/.test(css)
   && /\.dsh-notebook-seg > button\.dsh-notebook-btn\{[^}]*height:22px/.test(css), '')
 check('the toolbar and tab strip share one left edge',
-  /\.dsh-notebook-toolbar\{[^}]*padding:7px 12px/.test(css)
-  && /\.dsh-notebook-tabs\{[^}]*padding:6px 12px/.test(css), '')
+  /\.dsh-notebook-toolbar\{[^}]*padding:0 12px/.test(css)
+  && /\.dsh-notebook-tabs\{[^}]*padding:3px 8px 0/.test(css), '')
+check('no stylesheet rule is declared twice',
+  // An appended duplicate silently wins: a second `.dsh-notebook-tab` block would
+  // override the tab design above without any file looking wrong.
+  (() => {
+    const seen = new Set()
+    for (const line of css.split('\n')) {
+      const match = /^(\s*\.[^{]+)\{/.exec(line)
+      if (match === null) continue
+      const selector = match[1].trim()
+      if (seen.has(selector)) return false
+      seen.add(selector)
+    }
+    return true
+  })(), 'a selector is declared more than once')
 check('an open-but-not-drawn tree row is marked differently from the drawn one',
   /\.dsh-notebook-item\[data-open="true"\]:not\(\[data-active="true"\]\)/.test(css), '')
 
