@@ -50,6 +50,13 @@ export default defineConfig({
     // externalize" hint has nothing to warn about.
     onlyBundle: false,
   },
+  // A Client component cannot read the package filesystem, so artwork is
+  // inlined: `import iconUrl from '../../icon.png'` becomes a data URL, and each
+  // tree icon imported from `assets/material-icons/` becomes its SVG source
+  // string (which the tree renders inline — see `src/client/icons/material.tsx`).
+  // Two `loader` rows instead of a generated source of duplicated bytes keep the
+  // files under `assets/` the only copies of the drawings.
+  loader: { '.png': 'dataurl', '.svg': 'text' },
   // Classic JSX comes from `tsconfig.json` (`"jsx": "react"`): the shell answers
   // `react`, not `react/jsx-runtime`.
   outputOptions: {

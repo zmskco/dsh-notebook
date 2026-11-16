@@ -85,8 +85,8 @@ const ctx = {
   },
   slots: {
     inject: (name, callback) => { callback(); return () => {} },
-    register: (options) => {
-      const entry = { kind: 'slot', options }
+    register: (options, component) => {
+      const entry = { kind: 'slot', options, component }
       registrations.push(entry)
       return () => {}
     },
@@ -99,6 +99,7 @@ try {
 } catch (error) {
   check('applying the client half does not throw', false, String(error))
 }
+const sidebarEntry = registrations.find(entry => entry.kind === 'slot' && entry.options.name === 'sidebar.panellist')
 const slots = registrations.filter(entry => entry.kind === 'slot').map(entry => entry.options)
 const sidebar = slots.find(entry => entry.name === 'sidebar.panellist')
 const main = slots.find(entry => entry.name === 'main')
@@ -301,11 +302,158 @@ check('a new file is named in an empty row inside the tree',
 check('the empty row commits on Enter and cancels on Escape',
   source.includes('Escape') && source.includes('isComposing'), '')
 
+// --- the editor's tabs ---------------------------------------------------------------
+// The tab model is pure, so the rules that matter are asserted as data: one buffer
+// per open file, a second click activating rather than re-reading, and a close that
+// lands on the neighbouring tab rather than on no tab at all.
+const { closeFile, fileNameOf, findFile, nextActive, openFile, patchFile, TabStrip } = exports
+/** The tree's icon component, by another name: the artwork section below binds `TreeIcon`. */
+const TreeRowIcon = exports.TreeIcon
+/** The label rule, checked as data: two chapters can hold a file with one name. */
+const tabLabel = exports.tabLabel
+check('a tab model exists', [closeFile, fileNameOf, findFile, nextActive, openFile, patchFile, TabStrip].every(fn => typeof fn === 'function'), '')
+check('a tab is named the way the tree names the row',
+  fileNameOf('笔记/第一章') === '第一章' && fileNameOf('第一章') === '第一章', fileNameOf('笔记/第一章'))
+const opened = openFile(openFile(openFile([], '第一章'), '笔记/素材.md'), 'README.md')
+check('opening files fills the strip in order',
+  opened.map(file => file.path).join('|') === '第一章|笔记/素材.md|README.md', opened.map(file => file.path).join('|'))
+check('a new tab starts empty and waits for its read',
+  opened.every(file => file.loading && !file.dirty && file.draft === ''), JSON.stringify(opened[0]))
+check('the surface a file opens in is the one its name asks for',
+  opened[0]?.mode === 'wysiwyg' && opened[1]?.mode === 'wysiwyg' && opened[2]?.mode === 'wysiwyg',
+  opened.map(file => file.mode).join(','))
+check('re-opening an open file changes nothing, so its buffer survives',
+  openFile(opened, '第一章') === opened, 'the array was rebuilt')
+check('a seeded tab needs no read',
+  openFile([], '新章', { draft: '# 新章\n\n', mode: 'wysiwyg' })[0]?.loading === false, '')
+const typed = patchFile(opened, '笔记/素材.md', { draft: '改了', dirty: true })
+check('a keystroke is recorded on that tab alone',
+  typed[1]?.draft === '改了' && typed[1]?.dirty === true && typed[0]?.draft === '' && typed[0]?.dirty === false,
+  JSON.stringify({ first: typed[0], second: typed[1], count: typed.length }))
+check('patching another tab does not touch the ones beside it',
+  typed[2] === opened[2] && typed[1] !== opened[1], '')
+check('patching a path that is not open is a no-op',
+  patchFile(opened, '没有', { dirty: true }) === opened && closeFile(opened, '没有') === opened, '')
+check('closing the drawn tab moves to the one on its right',
+  nextActive(opened, '笔记/素材.md', '笔记/素材.md') === 'README.md',
+  String(nextActive(opened, '笔记/素材.md', '笔记/素材.md')))
+check('closing the last tab falls back to the left',
+  nextActive(opened, 'README.md', 'README.md') === '笔记/素材.md', '')
+check('closing a tab that is not drawn keeps the drawn one',
+  nextActive(opened, '第一章', 'README.md') === 'README.md', '')
+check('closing the only tab empties the editor', nextActive(opened, '第一章', '第一章') === '笔记/素材.md'
+  && nextActive([opened[0]], '第一章', '第一章') === undefined, '')
+check('closing removes exactly one tab',
+  closeFile(opened, '笔记/素材.md').map(file => file.path).join('|') === '第一章|README.md',
+  closeFile(opened, '笔记/素材.md').map(file => file.path).join('|'))
+
+// The strip draws each tab from the file name it stands for, through the same
+// `TreeIcon` the tree uses — so a `.md` chapter looks the same in both lists.
+const strip = TabStrip({
+  files: [opened[0], { ...opened[1], dirty: true }],
+  active: '第一章',
+  t: key => key,
+  onChoose: () => {},
+  onClose: () => {},
+  meta: [React.createElement('span', { key: 'state', 'data-role': 'save-state' }, 'saved')],
+})
+const tabs = []
+walk(strip, (element) => { if (element.props?.role === 'tab') tabs.push(element) })
+check('the strip draws one tab per open file', tabs.length === 2, String(tabs.length))
+check('a tab carries the file name and its own path',
+  tabs[0]?.props?.title === '第一章' && tabs[1]?.props?.['data-tab-path'] === '笔记/素材.md',
+  JSON.stringify(tabs.map(tab => tab.props?.title)))
+check('only the drawn tab is selected, and it is the strip\'s one tab stop',
+  tabs[0]?.props?.['aria-selected'] === 'true' && tabs[0]?.props?.tabIndex === 0
+  && tabs[1]?.props?.['aria-selected'] === 'false' && tabs[1]?.props?.tabIndex === -1, '')
+check('an unsaved tab is marked as one',
+  tabs[1]?.props?.['data-dirty'] === 'true' && tabs[0]?.props?.['data-dirty'] === 'false', '')
+const tabIconName = findIn(tabs[1], element => element.type === TreeRowIcon)
+check('a tab reuses the directory tree\'s artwork',
+  // The strip and the tree render the same component, which is the only way "the
+  // tab icon is the row's icon" can stay true as the theme selection changes.
+  tabIconName !== undefined && typeof TreeRowIcon === 'function'
+  && findIn(strip, element => element.type === TreeRowIcon) !== undefined,
+  String(tabIconName?.type))
+check('a tab is drawn from the file name it stands for',
+  tabIconName?.props?.name === '素材.md', String(tabIconName?.props?.name))
+check('a tab asks for a smaller edge than a tree row',
+  tabIconName?.props?.size === 14 && exports.TREE_ICON_SIZE === 16,
+  `${String(tabIconName?.props?.size)}/${String(exports.TREE_ICON_SIZE)}`)
+check('every tab has a close control',
+  tabs.every(tab => findIn(tab, element => element.type === 'button') !== undefined), '')
+const tabList = findIn(strip, element => element.props?.role === 'tablist')
+check('the strip is a tablist with a name',
+  tabList !== undefined && tabList.props['aria-label'] === 'openFiles'
+  && tabList.props['aria-orientation'] === 'horizontal', String(tabList?.props?.role))
+check('the keyboard reaches the strip and can close a tab',
+  /ArrowRight/.test(source) && /ArrowLeft/.test(source) && /=== ["']Delete["']/.test(source)
+  && source.includes('onAuxClick'), '')
+
+// The tab/page wiring a screen reader needs: a named tablist, tabs that point at
+// the page, and a panel that is labelled by the drawn tab.
+const page = findIn(column, element => element.props?.role === 'tabpanel')
+check('a tab names the page it controls',
+  tabs.every(tab => tab.props?.['aria-controls'] === exports.PAGE_ID)
+  && typeof exports.PAGE_ID === 'string', String(exports.PAGE_ID))
+check('the tab labels are unique DOM ids',
+  tabs.map(tab => tab.props?.id).every(id => typeof id === 'string' && id.length > 0)
+  && new Set(tabs.map(tab => tab.props?.id)).size === tabs.length,
+  JSON.stringify(tabs.map(tab => tab.props?.id)))
+check('a tab announces its unsaved state',
+  tabs[1]?.props?.['aria-label'] !== undefined && tabs[1].props['aria-label'].endsWith('unsavedSuffix')
+  && tabs[0]?.props?.['aria-label'] === '第一章', String(tabs[1]?.props?.['aria-label']))
+// Two chapters can hold a file with the same name; the labels have to differ then.
+check('a repeated file name says which folder it is in',
+  (() => {
+    const same = openFile(openFile([], '第一章/笔记.md'), '第二章/笔记.md')
+    const named = same.map(file => tabLabel(same, file))
+    return named[0] === '笔记.md · 第一章' && named[1] === '笔记.md · 第二章'
+  })(), 'two identical tab labels are possible')
+check('a unique file name stays short',
+  tabLabel(opened, opened[0]) === '第一章', tabLabel(opened, opened[0]))
+check('an unsaved tab shows its dot only when it is not the drawn one',
+  // The dot is a second mark for a fact the toolbar already states about the file
+  // on screen; two of them in one band read as two problems. Tab 1 is dirty and not
+  // drawn (dot drawn); a dirty drawn tab must not also get one.
+  findIn(tabs[1], element => String(element.props?.className ?? '') === 'dsh-notebook-tabDot') !== undefined
+  && findIn(TabStrip({
+    files: [{ ...opened[0], dirty: true }],
+    active: '第一章',
+    t: key => key,
+    onChoose: () => {},
+    onClose: () => {},
+  }), element => String(element.props?.className ?? '') === 'dsh-notebook-tabDot') === undefined,
+  'the dot is not limited to the tabs that are not drawn')
+check('the drawn file\'s count rides at the end of the strip, not in the wrapping toolbar',
+  (() => {
+    const head = findIn(column, element => String(element.props?.className ?? '').includes('editorHead'))
+    const children = [head?.props?.children].flat()
+    const toolbar = children.find(child => String(child?.props?.className ?? '') === 'dsh-notebook-toolbar')
+    // The strip is a component, so `walk` cannot descend into it: the check renders
+    // it itself (above) with the same `meta` prop the panel passes.
+    const inToolbar = findIn(toolbar, element => element.props?.['data-role'] === 'save-state')
+    const inStrip = findIn(strip, element => element.props?.['data-role'] === 'save-state')
+    return inToolbar === undefined && inStrip !== undefined
+  })(), 'the save state still lives in the row that re-flows')
+check('the editor head holds the toolbar above the tabs',
+  (() => {
+    const head = findIn(column, element => String(element.props?.className ?? '').includes('editorHead'))
+    if (head === undefined) return false
+    const children = [head.props?.children].flat()
+    const typebar = children.findIndex(child => String(child?.props?.className ?? '') === 'dsh-notebook-toolbar')
+    const strip = children.findIndex(child => child?.type === TabStrip)
+    return typebar >= 0 && strip === typebar + 1
+  })(), 'the tab strip is not under the toolbar')
+
 // --- styles ------------------------------------------------------------------------
 const css = /const CSS = `([\s\S]*?)`;/.exec(source)?.[1] ?? ''
 check('the panel ships its stylesheet', css.includes('.dsh-notebook-root{'), `${css.length} chars`)
 check('every dsh-notebook-* class the bundle uses has a rule',
+  // `dsh-notebook-page` is an element **id** (the page a tab controls), not a class:
+  // it is named for the tab wiring, and needs no stylesheet entry.
   [...new Set([...source.matchAll(/(?<![.\w-])dsh-notebook-[A-Za-z0-9]+/g)].map(match => match[0]))]
+    .filter(name => name !== 'dsh-notebook-page')
     .filter(name => !css.includes(`.${name}`) && !css.includes(`@keyframes ${name}`)).length === 0,
   '')
 check('the paper covers the whole panel',
@@ -314,15 +462,173 @@ check('four paper palettes exist',
   ['plain', 'elegant', 'night', 'green'].every(id => source.includes(`[data-paper="${id}"]`)), '')
 check('the selected option is styled', /button\.dsh-notebook-btn\[data-selected="true"\]/.test(source), '')
 check('the reveal icon turns while it works', source.includes('@keyframes dsh-notebook-spin'), '')
+// "Fixed" is a layout claim, so it is asserted on the stylesheet: the head does not
+// shrink, the tabs keep their own text and scroll sideways, and the page below the
+// head is the only region that scrolls.
+check('the toolbar and tabs are pinned above a scrolling page',
+  /\.dsh-notebook-editorHead\{[^}]*flex:none/.test(css)
+  && /\.dsh-notebook-editor\{[^}]*flex:1[^}]*overflow:hidden/.test(css)
+  && /\.dsh-notebook-tabs\{[^}]*overflow-x:auto/.test(css)
+  && /\.dsh-notebook-tab\{[^}]*flex:none/.test(css), '')
+check('the drawn tab is the raised one',
+  // The drawn tab is a filled chip with a brand underline — the same mark the file's
+  // row in the tree uses — rather than a box that only differs by a border.
+  /\.dsh-notebook-tab\[data-active="true"\]\{[^}]*background:var\(--dsw-alias-bg-layer-1\)/.test(css)
+  && /\.dsh-notebook-tab\[data-active="true"\]\{[^}]*inset 0 -2px 0 0 var\(--dsw-alias-brand-primary\)/.test(css), '')
+// The header band: both columns open with a 44px row, so the directory heading and
+// the editor toolbar put their rules on the same line instead of two nearby ones.
+check('the two columns open with one header band',
+  /\.dsh-notebook-section\{[^}]*height:44px/.test(css)
+  && /\.dsh-notebook-toolbar\{[^}]*min-height:44px/.test(css)
+  && /\.dsh-notebook-toolbar\{[^}]*border-bottom:1px solid/.test(css)
+  && !/\.dsh-notebook-editorHead\{[^}]*border-bottom/.test(css), '')
+check('the picker groups are trays, not a row of bordered boxes',
+  /\.dsh-notebook-seg\{[^}]*border-radius:8px/.test(css)
+  && /\.dsh-notebook-seg > button\.dsh-notebook-btn\{[^}]*border:0/.test(css)
+  && /\.dsh-notebook-seg > button\.dsh-notebook-btn\[data-selected="true"\]\{[^}]*background:var\(--dsw-alias-bg-base\)/.test(css), '')
+check('every picker control is the same height',
+  /\.dsh-notebook-seg\{[^}]*height:28px/.test(css)
+  && /\.dsh-notebook-typebar \.dsh-notebook-select\{[^}]*height:28px/.test(css)
+  && /\.dsh-notebook-seg > button\.dsh-notebook-btn\{[^}]*height:22px/.test(css), '')
+check('the toolbar and tab strip share one left edge',
+  /\.dsh-notebook-toolbar\{[^}]*padding:7px 12px/.test(css)
+  && /\.dsh-notebook-tabs\{[^}]*padding:6px 12px/.test(css), '')
+check('an open-but-not-drawn tree row is marked differently from the drawn one',
+  /\.dsh-notebook-item\[data-open="true"\]:not\(\[data-active="true"\]\)/.test(css), '')
 
 // --- one icon set --------------------------------------------------------------------
-check('every glyph is drawn on the Lucide grid at one weight',
+// The gem's paths moved out of `glyphs.tsx` when the sidebar row started drawing the
+// artwork itself, so the "one stroke family" rule covers the in-panel glyphs only.
+check('every in-panel glyph is drawn on the Lucide grid at one weight',
   source.includes('strokeWidth: 2') && !source.includes('strokeWidth: 1.6')
   && (source.match(/viewBox: "0 0 24 24"/g) ?? []).length === 1, '')
-const pluginIcon = await readFile(new URL('../icon.svg', import.meta.url), 'utf8')
-check('the plugin icon is the same notebook the sidebar mark draws',
-  pluginIcon.includes('viewBox="0 0 24 24"') && pluginIcon.includes('stroke-width="2"')
-  && pluginIcon.includes('M2 6h4') && pluginIcon.includes('width="16" height="20"'), pluginIcon.slice(0, 80))
+// The sidebar row and the inventory card must show the same artwork. DSH reads the
+// card's icon from `icon.png` (it refuses other formats, and `.ico` by name), and the
+// bundle inlines those exact bytes, so both are compared with the PNG itself.
+const pluginIcon = await readFile(new URL('../icon.png', import.meta.url))
+const iconWidth = pluginIcon.length >= 24 ? pluginIcon.readUInt32BE(16) : 0
+const iconHeight = pluginIcon.length >= 24 ? pluginIcon.readUInt32BE(20) : 0
+check('the plugin icon is a PNG inside the metadata size limit',
+  pluginIcon.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  && pluginIcon.length <= 256 * 1024, `${pluginIcon.length} bytes`)
+check('the plugin icon is a square large enough for the inventory card',
+  iconWidth === 256 && iconHeight === 256, `${iconWidth}x${iconHeight}`)
+check('the manifest points DSH at that PNG',
+  pkg.icon === './icon.png' && pkg.exports['./icon'] === './icon.png'
+  && pkg.files.includes('icon.png'), JSON.stringify({ icon: pkg.icon, export: pkg.exports['./icon'] }))
+const artwork = `data:image/png;base64,${pluginIcon.toString('base64')}`
+const mark = sidebarEntry?.component?.({ size: 18, active: false })
+check('the sidebar row draws the plugin artwork, not a monochrome glyph',
+  mark?.type === 'img' && mark.props.src === artwork, mark === undefined ? 'no component' : String(mark.type))
+check('the artwork follows the edge the sidebar asks for',
+  mark?.props.width === 18 && mark.props.height === 18, `${String(mark?.props.width)}x${String(mark?.props.height)}`)
+check('the bundle inlines icon.png, so the packet ships one copy',
+  source.includes(artwork), 'the bundle does not carry icon.png')
+
+// --- the tree's type artwork ---------------------------------------------------------
+// Material Icon Theme's associations are data, so they are checked as data: the exact
+// name rule, the extension rule, folders open and closed, and the generic fallbacks.
+const {
+  FALLBACK_FILE,
+  FALLBACK_FOLDER,
+  FALLBACK_FOLDER_OPEN,
+  TREE_ICON_SIZE,
+  iconArtwork,
+  iconIdForFile,
+  iconIdForFolder,
+  materialIconIds,
+  TreeIcon,
+} = exports
+const ids = materialIconIds()
+check('the bundle carries the theme\'s drawings', ids.length >= 60 && ids.includes('file')
+  && ids.includes('markdown') && ids.includes('folder') && ids.includes('folder-open'), `${ids.length} drawings`)
+check('every drawing is inert, self-contained SVG markup',
+  ids.every((id) => {
+    const art = iconArtwork(id)
+    // An id must be scoped to its icon: several theme drawings reuse `id="a"`, and two
+    // inlined copies on one page would resolve each other's references.
+    if (/<script\b|<foreignObject\b|\son[a-z]+\s*=|\bjavascript:/iu.test(art)) return false
+    const local = [...art.matchAll(/\sid="([^"]+)"/gu)].map(match => match[1])
+    return art.startsWith('<svg') && local.every(id_ => id_.startsWith(`${id}-`))
+  }), 'a drawing is missing, executable, or carries an unscoped element id')
+check('a known file name wins over its extension',
+  iconIdForFile('package.json') === 'nodejs' && iconIdForFile('README.md') === 'readme'
+  && iconIdForFile('LICENSE') === 'license' && iconIdForFile('data.csv') === 'table',
+  `${iconIdForFile('package.json')}/${iconIdForFile('README.md')}/${iconIdForFile('LICENSE')}`)
+check('the name rule ignores case',
+  iconIdForFile('Package.JSON') === 'nodejs' && iconIdForFile('README.MD') === 'readme', '')
+check('an extension names the kind of text the Host will list',
+  iconIdForFile('笔记.md') === 'markdown' && iconIdForFile('poem.txt') === 'document'
+  && iconIdForFile('数据.yaml') === 'yaml' && iconIdForFile('log.jsonl') === 'json',
+  `${iconIdForFile('笔记.md')}/${iconIdForFile('poem.txt')}`)
+// The one place this panel follows the editor's rule instead of the theme's table: a
+// name with no extension opens as a markdown document here, and that is how a chapter
+// is named by default, so most rows of a novel depend on it. The predicate is the
+// editor's own (`isMarkdownPath`), which is what keeps the two from disagreeing.
+check('an extensionless name is drawn as the document the editor opens',
+  iconIdForFile('第一章') === 'markdown' && iconIdForFile('说明') === 'markdown'
+  && iconIdForFile('第一章') === iconIdForFile('笔记.md'),
+  `${iconIdForFile('第一章')}/${iconIdForFile('说明')}`)
+check('a name the editor would not render keeps the generic file',
+  iconIdForFile('history.jsonl') === 'json' && iconIdForFile('.gitignore') === FALLBACK_FILE
+  && iconIdForFile('mystery.zzz') === FALLBACK_FILE && iconIdForFile('<img>.zzz') === FALLBACK_FILE,
+  `${iconIdForFile('.gitignore')}/${iconIdForFile('mystery.zzz')}`)
+check('a prototype key is not read as an association',
+  iconIdForFile('constructor') === 'markdown' && iconIdForFolder('constructor') === FALLBACK_FOLDER
+  && iconIdForFolder('__proto__') === FALLBACK_FOLDER,
+  `${iconIdForFile('constructor')}/${iconIdForFolder('constructor')}`)
+check('a folder is drawn from its own name',
+  iconIdForFolder('src') === 'folder-src' && iconIdForFolder('assets') === 'folder-resource'
+  && iconIdForFolder('素材') === FALLBACK_FOLDER, `${iconIdForFolder('src')}/${iconIdForFolder('素材')}`)
+check('an open folder has its own drawing and a closed fallback',
+  iconIdForFolder('src', true) === 'folder-src-open'
+  && iconIdForFolder('素材', true) === FALLBACK_FOLDER_OPEN, iconIdForFolder('src', true))
+const fileRow = TreeIcon({ name: '笔记.md' })
+const folderRow = TreeIcon({ name: '素材', directory: true })
+check('a row inlines the drawing, keyed by its icon id',
+  fileRow.type === 'span' && fileRow.props['data-icon'] === 'markdown'
+  && folderRow.props['data-icon'] === 'folder'
+  && String(fileRow.props.dangerouslySetInnerHTML?.__html).startsWith('<svg'),
+  JSON.stringify(fileRow.props['data-icon']))
+check('an unnamed row draws the generic file or folder, not a looked-up name',
+  TreeIcon({ name: '' }).props['data-icon'] === FALLBACK_FILE
+  && TreeIcon({ name: '  ', directory: true }).props['data-icon'] === FALLBACK_FOLDER,
+  `${TreeIcon({ name: '' }).props['data-icon']}/${TreeIcon({ name: '', directory: true }).props['data-icon']}`)
+check('a row is the same edge as the toolbar glyphs',
+  fileRow.props.style.width === TREE_ICON_SIZE && TREE_ICON_SIZE === 16, String(TREE_ICON_SIZE))
+check('the tree rows draw the artwork, not a Lucide file or folder glyph',
+  !source.includes('FileIcon') && !source.includes('FolderIcon'), 'a generic glyph is still in the bundle')
+check('the vendored licence ships with the package',
+  pkg.files.includes('assets/material-icons/LICENSE.txt') && pkg.files.includes('assets/material-icons/NOTICE.md'),
+  JSON.stringify(pkg.files))
+// The vendored selection must follow what the Host will list, or the bundle pays for
+// drawings no row can ever show. `HOST_TEXT_EXTENSIONS` in the vendor script and
+// `TEXT_EXTENSIONS` in the Host are two copies of one rule, so they are compared here.
+const hostManuscript = await readFile(new URL('../src/host/story/manuscript.ts', import.meta.url), 'utf8')
+const hostExtensions = [...(/TEXT_EXTENSIONS = new Set\(\[([^\]]+)\]\)/.exec(hostManuscript)?.[1] ?? '')
+  .matchAll(/'([^']+)'/g)].map(match => match[1].replace(/^\./, '')).sort()
+const vendorScript = await readFile(new URL('../scripts/vendor-material-icons.mjs', import.meta.url), 'utf8')
+const vendoredExtensions = [...(/HOST_TEXT_EXTENSIONS = \[([^\]]+)\]/.exec(vendorScript)?.[1] ?? '')
+  .matchAll(/'([^']+)'/g)].map(match => match[1]).sort()
+const generatedSource = await readFile(new URL('../src/client/icons/material.generated.ts', import.meta.url), 'utf8')
+check('the vendored file types are the ones the Host lists',
+  hostExtensions.length > 0 && hostExtensions.join(',') === vendoredExtensions.join(','),
+  `host=${hostExtensions.join(',')} vendor=${vendoredExtensions.join(',')}`)
+check('every vendored file drawing is reachable from a real association',
+  (() => {
+    // A file drawing with no association in the shipped tables can never be shown —
+    // it would be bytes paid for on every page load and never drawn. `file` and
+    // `markdown` are the two the component reaches directly (fallback and document).
+    const referenced = new Set(['file', 'markdown'])
+    for (const table of ['FILE_NAMES', 'FILE_EXTENSIONS']) {
+      const start = generatedSource.indexOf(`export const ${table}: Record<string, string> = {`)
+      const body = generatedSource.slice(start, generatedSource.indexOf('\n}', start))
+      for (const match of body.matchAll(/: "([^"]+)",/g)) referenced.add(match[1])
+    }
+    const orphans = ids.filter(id => !id.startsWith('folder-') && id !== 'folder' && !referenced.has(id))
+    return orphans.length === 0 && !ids.includes('typescript') && !ids.includes('image')
+  })(),
+  'a file drawing no association reaches is being shipped')
 
 // --- names ---------------------------------------------------------------------------
 const { DICTS } = exports
@@ -337,9 +643,20 @@ check('the action labels are present',
   ['newDir', 'newFile', 'refresh', 'reveal', 'writing', 'source'].every(key => typeof zhDict[key] === 'string'), '')
 check('the old product name is gone from the artifact',
   !source.includes('写作助手') && !source.includes('微光') && !source.includes('novel-studio'), 'a retired name is still shipped')
+// The vendored icon tables are third-party data, not product copy: they legitimately
+// contain `storyboard` (an XML dialect's file extension) and hundreds of other words.
+// The retired features are searched for in the plugin's own code, so the icon data is
+// cut out first — from its region marker to the next module the bundle emits.
+const ownSource = source.replace(
+  /\/\/#region src\/client\/icons\/material\.generated\.ts[\s\S]*?(?=\/\/#region )/,
+  '',
+)
+check('the icon data was cut out before the retired-feature scan',
+  ownSource.length < source.length && !ownSource.includes('"storyboard"'),
+  `${source.length} -> ${ownSource.length} chars`)
 check('the story machinery is gone from the artifact',
-  !source.includes('novel_projects') && !source.includes('comic_') && !source.includes('bible')
-  && !source.includes('storyboard') && !source.includes('/api/glimmer'), 'a removed feature still ships')
+  !ownSource.includes('novel_projects') && !ownSource.includes('comic_') && !ownSource.includes('bible')
+  && !ownSource.includes('storyboard') && !ownSource.includes('/api/glimmer'), 'a removed feature still ships')
 check('api calls name the notebook route',
   source.includes('"/api/notebook"') && !source.includes('/notebook/media'), '')
 

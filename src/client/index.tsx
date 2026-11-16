@@ -44,6 +44,33 @@ export {
 // with the name the locale metadata hands to DSH's plugin inventory.
 export { DICTS, en, zh } from './strings'
 export { conversationShell, ConversationPane, CHAT_SLOT } from './studio/ConversationPane'
+// The tab model: pure, so the artifact check drives the open/close/switch rules
+// directly instead of through a render it cannot drive.
+export {
+  closeFile,
+  fileNameOf,
+  findFile,
+  nextActive,
+  openFile,
+  PAGE_ID,
+  patchFile,
+  tabElementId,
+} from './state/tabs'
+export { TabStrip, tabLabel } from './studio/TabStrip'
+// The tree's type artwork: the Material Icon Theme lookup the artifact check
+// drives directly (it is pure, string-in/data-out) and the component the rows
+// render.
+export {
+  FALLBACK_FILE,
+  FALLBACK_FOLDER,
+  FALLBACK_FOLDER_OPEN,
+  iconArtwork,
+  iconIdForFile,
+  iconIdForFolder,
+  materialIconIds,
+  TREE_ICON_SIZE,
+  TreeIcon,
+} from './icons/material'
 // The pane arithmetic, for the same reason: a drag cannot be driven by the stub
 // render, and "the manuscript keeps its minimum width" is not a visual detail.
 export {

@@ -2,7 +2,7 @@
   "name": "@zmskco/dsh-notebook",
   "version": "0.1.0",
   "description": "笔记本 (Notebook) — a markdown notebook for the DeepSeek Harness workspace: file tree, WYSIWYG editor, autosave and an embedded AI chat.",
-  "icon": "./icon.svg",
+  "icon": "./icon.png",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zmskco/dsh-notebook.git"
@@ -18,7 +18,8 @@
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
     "./locale/*.json": "./locale/*.json",
-    "./icon.svg": "./icon.svg",
+    "./icon": "./icon.png",
+    "./icon.png": "./icon.png",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
@@ -28,7 +29,9 @@
     "lib/**/*.js",
     "cordis.patch.yml",
     "locale/*.json",
-    "icon.svg",
+    "icon.png",
+    "assets/material-icons/LICENSE.txt",
+    "assets/material-icons/NOTICE.md",
     "LICENSE",
     "README.md"
   ],
@@ -62,6 +65,7 @@
     "check:sandbox": "node scripts/check-sandbox.mjs",
     "smoke": "node scripts/smoke-host.mjs",
     "test": "npm run typecheck && npm run check:sandbox && npm run smoke",
+    "vendor:icons": "node scripts/vendor-material-icons.mjs",
     "watch:client": "tsdown --watch",
     "watch:host": "tsc -p tsconfig.host.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.host.json --noEmit && tsc -p tsconfig.json",

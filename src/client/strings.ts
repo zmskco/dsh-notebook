@@ -57,6 +57,15 @@ export const zh = {
   paperGreen: '绿荫',
   showChat: '显示对话区',
   hideChat: '隐藏对话区',
+  /** The tab strip's accessible name; the tabs themselves are file names. */
+  openFiles: '打开的文件',
+  closeFile: '关闭文件',
+  /** Appended to a tab's accessible name when that tab has unsaved changes. */
+  unsavedSuffix: '，未保存',
+  /** The editor column with no tab open. */
+  openHint: '从左侧目录打开一个文件，或点目录标题行的「新建文件」。',
+  /** A tab whose file is still being read. */
+  loadingFile: '正在读取…',
 } as const
 
 export type StringKey = keyof typeof zh
@@ -101,6 +110,11 @@ export const en: Record<StringKey, string> = {
   paperGreen: 'Green shade',
   showChat: 'Show the conversation',
   hideChat: 'Hide the conversation',
+  openFiles: 'Open files',
+  closeFile: 'Close file',
+  unsavedSuffix: ', unsaved',
+  openHint: 'Open a file from the directory on the left, or use “New file” in its heading.',
+  loadingFile: 'Reading…',
 }
 
 /** Resolve a key without the framework seat, falling back to Chinese. */
