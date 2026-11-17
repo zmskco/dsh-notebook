@@ -40,6 +40,29 @@ export interface FsWriteOutcome {
   after: string
 }
 
+/** What a removal reports: the text it removed, or null when no basis was available. */
+export interface FsDeleteOutcome {
+  before: string | null
+}
+
+/**
+ * What a move reports.
+ *
+ * The two effects are separate on purpose: a destination published while the source
+ * survives is a successful-but-partial outcome (`sourceDeleted: false`), not a
+ * failure, and the caller has to say so rather than assume the move was complete.
+ */
+export type FsMoveOutcome = {
+  sourceBefore: string | null
+  destination: FsWriteOutcome
+  sourceDeleted: true
+} | {
+  sourceBefore: string | null
+  destination: FsWriteOutcome
+  sourceDeleted: false
+  sourceFailure: { code: string; message: string }
+}
+
 export interface SandboxExecutionPolicy {
   mode: 'read-only' | 'workspace-write' | 'danger-full-access'
   workspaceRoot: string
@@ -64,6 +87,35 @@ export interface FsService {
     signal?: AbortSignal,
     sandboxPolicy?: SandboxExecutionPolicy,
   ): Promise<FsWriteOutcome>
+  /**
+   * Remove one **regular file**. A directory, or anything else that is not a
+   * regular file, fails with `FS_NOT_REGULAR_FILE` — a folder is removed with
+   * `node:fs`, which has no provider equivalent (see `story/project.ts`).
+   */
+  deleteFile(
+    target: FsTarget,
+    expected?: { version: string },
+    signal?: AbortSignal,
+    sandboxPolicy?: SandboxExecutionPolicy,
+  ): Promise<FsDeleteOutcome>
+  /**
+   * Publish the source text at the destination, then remove the source.
+   *
+   * Both are regular files inside one provider; the destination guard follows a
+   * write's and the source guard a patch's. Used for renaming, so the rename keeps
+   * the file's line endings and file mode instead of re-encoding it.
+   */
+  moveFile(
+    source: FsTarget,
+    destination: FsTarget,
+    options: {
+      hunks?: readonly unknown[]
+      expectedSource?: { version: string }
+      expectedDestination?: { kind: 'createIfAbsent' } | { kind: 'replaceIfVersion'; version: string }
+    },
+    signal?: AbortSignal,
+    sandboxPolicy?: SandboxExecutionPolicy,
+  ): Promise<FsMoveOutcome>
   listDir(target: FsTarget, signal?: AbortSignal): Promise<FsDirEntry[]>
   stat(target: FsTarget, signal?: AbortSignal): Promise<FsInfo | undefined>
   contains(parent: FsTarget, child: FsTarget): boolean

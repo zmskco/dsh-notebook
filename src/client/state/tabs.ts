@@ -138,6 +138,46 @@ export function closeFile(files: OpenFile[], path: string): OpenFile[] {
 }
 
 /**
+ * Move one open tab to a new path, keeping its buffer.
+ *
+ * A rename changes the tab's identity — its path is the key of every write — but not
+ * its contents, so the record moves rather than being closed and re-opened (which
+ * would discard unsaved text and re-read from disk). The `mode` is kept too: a file
+ * renamed from `笔记` to `笔记.md` is the same document, and flipping it to the
+ * rendered surface because its name gained a suffix would be a surprise.
+ * @param file - the record to move.
+ * @param from - its current path.
+ * @param to - the path it now has.
+ * @returns the record, moved when it was the one at `from`.
+ */
+export function rekeyFile(file: OpenFile, from: string, to: string): OpenFile {
+  return file.path === from ? { ...file, path: to } : file
+}
+
+/**
+ * Rewrite one tree entry after a rename, and every entry beneath it.
+ *
+ * A renamed folder moves its whole subtree, so patching only the folder's own row
+ * would leave its children pointing at a path that no longer exists — and the tree
+ * would draw them under a folder that is still there but no longer contains them.
+ * @param entry - one listing entry, of any shape that carries `path` and `name`.
+ * @param from - the old project-relative path.
+ * @param to - the new one.
+ * @param name - the new basename, for the entry itself.
+ * @returns the entry, rewritten when it is inside `from`.
+ */
+export function renameEntry<T extends { path: string, name: string }>(
+  entry: T,
+  from: string,
+  to: string,
+  name: string,
+): T {
+  if (entry.path === from) return { ...entry, path: to, name }
+  if (!entry.path.startsWith(`${from}/`)) return entry
+  return { ...entry, path: `${to}${entry.path.slice(from.length)}` }
+}
+
+/**
  * Which tab should be drawn after one closes.
  *
  * Closing a tab the author is not looking at leaves the selection alone. Closing

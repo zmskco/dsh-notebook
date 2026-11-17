@@ -84,6 +84,11 @@ button.dsh-notebook-btn[data-variant="secondary"]:hover:not(:disabled){backgroun
 /* Icon-only buttons: square, no text padding, and the glyph is the button. */
 button.dsh-notebook-btn[data-variant="icon"]{padding:4px;line-height:0;color:var(--dsw-alias-label-secondary);background:transparent;border-color:transparent}
 button.dsh-notebook-btn[data-variant="icon"]:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
+/* The one destructive control in the panel: filled with the error colour, because a
+   delete button that looks like every other button is a delete button you press by
+   accident. */
+button.dsh-notebook-btn[data-variant="danger"]{background:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-bg-base);font-weight:600}
+button.dsh-notebook-btn[data-variant="danger"]:hover:not(:disabled){border-color:var(--dsw-alias-state-error-primary);filter:brightness(1.08)}
 .dsh-notebook-input,.dsh-notebook-textarea,.dsh-notebook-select{font:inherit;width:100%;box-sizing:border-box;padding:5px 8px;border-radius:6px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
 /* The width:100% above is for a field stacked under its label. Placed directly in
    a row it claims the whole line, and since the row wraps, the buttons beside it
@@ -151,6 +156,17 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 .dsh-notebook-warnTitle{color:var(--dsw-alias-state-warn-primary);font-size:12px;font-weight:600}
 .dsh-notebook-warnBody{margin:0;white-space:pre-wrap;font-size:11.5px;line-height:1.6;color:var(--dsw-alias-label-secondary)}
 .dsh-notebook-empty{flex:1;padding:24px 16px;color:var(--dsw-alias-label-secondary);font-size:12.5px}
+/* The delete confirmation: the panel's only modal, because it guards the only
+   operation typing cannot undo. The scrim is the paper darkened rather than a black
+   veil, so the panel does not flash to grey on a dark paper. */
+.dsh-notebook-scrim{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;background:color-mix(in srgb,var(--dsw-alias-bg-base) 55%,transparent)}
+.dsh-notebook-dialog{display:flex;flex-direction:column;gap:10px;box-sizing:border-box;width:min(420px,100%);padding:16px 18px;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);box-shadow:0 12px 32px rgba(0,0,0,.18)}
+.dsh-notebook-dialogTitle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--dsw-alias-state-error-primary)}
+.dsh-notebook-dialogBody{margin:0;font-size:12.5px;line-height:1.65;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere}
+.dsh-notebook-dialogNote{margin:0;font-size:12px;color:var(--dsw-alias-label-secondary)}
+/* The destructive button is on the right, past the safe one: reading order leads the
+   hand away from it. */
+.dsh-notebook-dialogActions{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}
 .dsh-notebook-progress{height:4px;border-radius:999px;background:var(--dsw-alias-bg-layer-2);overflow:hidden}
 .dsh-notebook-progress > i{display:block;height:100%;background:var(--dsw-alias-brand-primary)}
 .dsh-notebook-chips{display:flex;flex-wrap:wrap;gap:4px}
@@ -398,7 +414,7 @@ export interface ButtonProps {
   children?: React.ReactNode
   onClick?: () => void
   disabled?: boolean
-  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'icon'
+  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'icon' | 'danger'
   title?: string
   type?: 'button' | 'submit'
   /**

@@ -89,6 +89,74 @@ export interface LayoutService {
   }
 }
 
+/**
+ * The slice of the shell's `contextMenus` service this plugin calls.
+ *
+ * Declared rather than imported, like the rest of this file. Read from
+ * `packages/client/ui-context-menu`'s public types and confirmed as mounted in this
+ * profile: `ui-context-menu` is a row of the `web-app` bundle, and it publishes
+ * `ctx.contextMenus` plus the `useContextMenu` hook it injects into every Slot scope.
+ *
+ * A plugin registers a *target family* and the actions it contributes to it. The
+ * shared overlay owns positioning, keyboard movement, focus return, dismissal and
+ * the per-gesture target capture — none of which this plugin reimplements.
+ */
+export interface ContextMenuBindings {
+  /**
+   * Bind a target to one element.
+   *
+   * The returned props carry `onContextMenu`, the keyboard equivalents (Shift+F10
+   * and the ContextMenu key) and the focus stop. An existing handler runs first and
+   * can keep ownership with `preventDefault()`.
+   */
+  getTriggerProps(
+    target: ContextMenuTarget | (() => ContextMenuTarget) | undefined,
+    handlers?: { onContextMenu?: unknown, onKeyDown?: unknown, tabIndex?: number },
+  ): { onContextMenu?: unknown, onKeyDown?: unknown, tabIndex?: number }
+}
+
+/** Read the gesture bindings owned by the current menu-plugin lifetime. */
+export type UseContextMenu = () => ContextMenuBindings
+
+/** One capturable object. The value is captured when the gesture begins. */
+export interface ContextMenuTarget {
+  kind: string
+  value: unknown
+}
+
+/** One action in a resolved menu. */
+export interface MenuAction {
+  /** Stable within its contribution; selection is by id. */
+  id: string
+  /** Already localized. */
+  label: string
+  disabled?: boolean
+  danger?: boolean
+  separatorBefore?: boolean
+  /** A glyph registered in the `contextMenu.icon` slot by this key. */
+  icon?: { key: string, src?: string }
+  /** Localized recovery guidance shown when `run` rejects. */
+  failureLabel?: string
+  children?: readonly MenuAction[]
+  /** Reject to report a visible failure; cancellation resolves normally. */
+  run?: () => void | Promise<void>
+}
+
+/** A contribution to one target family; `resolve` runs per opening. */
+export interface MenuContribution {
+  /** Namespaced and stable; a duplicate id within one target family fails. */
+  id: string
+  target: string
+  order: number
+  resolve(target: unknown, signal: AbortSignal): readonly MenuAction[] | Promise<readonly MenuAction[]>
+}
+
+export interface ContextMenusService {
+  register(contribution: MenuContribution): () => void
+  open(target: ContextMenuTarget, point: { x: number, y: number }): void
+  notify(text: string, success?: boolean): void
+}
+
 export interface ClientContext {
   readonly slots: SlotsService
   readonly locale: LocaleService
@@ -103,5 +171,6 @@ export interface ClientContext {
    */
   get(name: 'uiWorkspace'): UiWorkspaceService | undefined
   get(name: 'layout'): LayoutService | undefined
+  get(name: 'contextMenus'): ContextMenusService | undefined
   get(name: string): unknown
 }

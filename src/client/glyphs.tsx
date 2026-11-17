@@ -160,3 +160,42 @@ export function ChatIcon({ size = GLYPH_SIZE }: ChatIconProps): React.ReactEleme
   return React.createElement(Glyph, { size },
     React.createElement('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }))
 }
+
+/**
+ * The two glyphs the right-click menu adds: Lucide's `pencil` and `trash-2`.
+ *
+ * They are the same stroke family as the toolbar, which is why the popup's icons
+ * line up with the panel's own rather than looking like a second icon set. The
+ * popup renders them at its own size; the drawing scales because the whole 24-grid
+ * does (see the module comment).
+ */
+export function RenameIcon({ size = GLYPH_SIZE }: PlusIconProps): React.ReactElement {
+  return React.createElement(Glyph, { size },
+    React.createElement('path', { d: 'M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497Z' }),
+    React.createElement('path', { d: 'm15 5 4 4' }))
+}
+
+/** A bin with its lid: Lucide's `trash-2`; see {@link RenameIcon}. */
+export function DeleteIcon({ size = GLYPH_SIZE }: PlusIconProps): React.ReactElement {
+  return React.createElement(Glyph, { size },
+    React.createElement('path', { d: 'M3 6h18' }),
+    React.createElement('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6' }),
+    React.createElement('path', { d: 'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' }),
+    React.createElement('path', { d: 'M10 11v6' }),
+    React.createElement('path', { d: 'M14 11v6' }))
+}
+
+/**
+ * The menu's glyph set, by the icon key each action declares.
+ *
+ * The keys are the action ids (`menu.ts`), so a menu action and its drawing cannot
+ * drift apart: one map, registered into the `contextMenu.icon` slot at activation.
+ */
+export const MENU_ICONS = {
+  'notebook.newFile': FilePlusIcon,
+  'notebook.newFolder': FolderPlusIcon,
+  'notebook.rename': RenameIcon,
+  'notebook.remove': DeleteIcon,
+  'notebook.refresh': RefreshIcon,
+  'notebook.reveal': RevealIcon,
+} as const

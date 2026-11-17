@@ -93,6 +93,20 @@ const ctx = {
     children: {},
   },
   effect: (callback) => { callback(); return () => {} },
+  // The services the shell provides by name. `ui-context-menu` publishes
+  // `contextMenus`; the stub records the contribution so the menu can be asserted
+  // without a browser or the real registry.
+  get: (name) => {
+    if (name !== 'contextMenus') return undefined
+    return {
+      register: (contribution) => {
+        registrations.push({ kind: 'menu', contribution })
+        return () => {}
+      },
+      open: () => {},
+      notify: () => {},
+    }
+  },
 }
 try {
   exports.apply(ctx)
@@ -446,14 +460,76 @@ check('the editor head holds the toolbar above the tabs',
     return typebar >= 0 && strip === typebar + 1
   })(), 'the tab strip is not under the toolbar')
 
+// --- the tree's right-click menu -------------------------------------------------------
+// DSH provides one shared context menu (`ui-context-menu`), which this plugin extends
+// through `ctx.contextMenus`: the shell owns the popup, this plugin declares a target
+// family and the actions. The stub above records the contribution, so the rules can be
+// driven as data rather than through a rendered popup.
+const menuEntry = registrations.find(entry => entry.kind === 'menu')
+check('the panel contributes to the shell\'s context menu',
+  menuEntry?.contribution !== undefined, JSON.stringify(registrations.filter(e => e.kind === 'menu').length))
+check('the contribution is a target family of its own',
+  // Contributing to the shipped `file` / `directory` families would put the
+  // notebook's "new folder right here" on files the user right-clicked elsewhere.
+  menuEntry?.contribution?.target === 'notebookEntry'
+  && menuEntry?.contribution?.id === 'notebook.entry', String(menuEntry?.contribution?.target))
+const menuActions = (entry) => menuEntry.contribution.resolve(entry, new AbortController().signal)
+const fileEntryActions = menuActions({ path: '笔记/第一章', name: '第一章', directory: false })
+check('a right-clicked file offers the six operations',
+  fileEntryActions.map(action => action.id).join(',') === 'newFile,newFolder,rename,delete,refresh,reveal',
+  fileEntryActions.map(action => action.id).join(','))
+check('the destructive action is last among the entries and marked as one',
+  (() => {
+    const at = fileEntryActions.findIndex(action => action.id === 'delete')
+    return fileEntryActions[at]?.danger === true
+      && fileEntryActions[at]?.separatorBefore !== true
+      && fileEntryActions[at + 1]?.id === 'refresh'
+      && fileEntryActions[at + 1]?.separatorBefore === true
+  })(), JSON.stringify(fileEntryActions.map(action => [action.id, action.danger ?? false])))
+check('every action is localized and carries its own glyph',
+  fileEntryActions.every(action => typeof action.label === 'string' && action.label.length > 0
+    && typeof action.icon?.key === 'string'), '')
+check('the root row can create and reveal, but cannot be renamed or deleted',
+  // The root is not an entry in its own tree; there is nothing to point at.
+  (() => {
+    const root = menuActions({ path: '', name: '笔记本', directory: true }).map(action => action.id)
+    return root.join(',') === 'newFile,newFolder,refresh,reveal'
+  })(), menuActions({ path: '', name: 'root', directory: true }).map(a => a.id).join(','))
+// Where "new" lands: inside the folder that was clicked, beside the file that was.
+check('a new entry lands inside the folder that was right-clicked',
+  exports.createTargetDir({ path: '素材', name: '素材', directory: true }) === '素材', '')
+check('a new entry lands beside the file that was right-clicked',
+  exports.createTargetDir({ path: '笔记/第一章', name: '第一章', directory: false }) === '笔记', '')
+check('a root row creates at the workspace root',
+  exports.createTargetDir({ path: '', name: 'root', directory: true }) === '', '')
+// An action must not throw when no panel is mounted (a menu opened after the panel
+// went away, or in a shell that never rendered it).
+check('a menu action with no panel mounted is a no-op',
+  (() => {
+    try {
+      for (const action of fileEntryActions) action.run?.()
+      return true
+    } catch { return false }
+  })(), 'an action threw without a panel')
+check('every menu glyph is registered in the icon slot',
+  (() => {
+    const keys = new Set(registrations.filter(entry => entry.kind === 'slot' && entry.options.name === 'contextMenu.icon')
+      .map(entry => entry.options.key))
+    return fileEntryActions.every(action => keys.has(action.icon.key)) && keys.size === 6
+  })(), JSON.stringify([...new Set(registrations.filter(e => e.kind === 'slot' && e.options.name === 'contextMenu.icon').map(e => e.options.key))]))
+check('the menu labels are all in both dictionaries',
+  exports.MENU_LABEL_KEYS.every(key => typeof exports.DICTS.zh?.[key] === 'string' && typeof exports.DICTS.en[key] === 'string'),
+  exports.MENU_LABEL_KEYS.filter(key => typeof exports.DICTS.zh?.[key] !== 'string').join(','))
+
 // --- styles ------------------------------------------------------------------------
 const css = /const CSS = `([\s\S]*?)`;/.exec(source)?.[1] ?? ''
 check('the panel ships its stylesheet', css.includes('.dsh-notebook-root{'), `${css.length} chars`)
 check('every dsh-notebook-* class the bundle uses has a rule',
-  // `dsh-notebook-page` is an element **id** (the page a tab controls), not a class:
-  // it is named for the tab wiring, and needs no stylesheet entry.
+  // `dsh-notebook-page` and `dsh-notebook-delete-question` are element **ids** (the
+  // page a tab controls, and the dialog's question), not classes: they are named for
+  // accessibility wiring and need no stylesheet entry.
   [...new Set([...source.matchAll(/(?<![.\w-])dsh-notebook-[A-Za-z0-9]+/g)].map(match => match[0]))]
-    .filter(name => name !== 'dsh-notebook-page')
+    .filter(name => name !== 'dsh-notebook-page' && name !== 'dsh-notebook-delete')
     .filter(name => !css.includes(`.${name}`) && !css.includes(`@keyframes ${name}`)).length === 0,
   '')
 check('the paper covers the whole panel',

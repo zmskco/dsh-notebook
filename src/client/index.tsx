@@ -12,9 +12,10 @@
  * that ordering irrelevant.
  */
 import { ConversationPane, CHAT_SLOT } from './studio/ConversationPane'
-import { PanelIcon } from './glyphs'
+import { MENU_ICONS, PanelIcon } from './glyphs'
 import { NotebookPage } from './studio/NotebookPage'
-import { DICTS, NS, zh } from './strings'
+import { registerEntryMenu } from './menu'
+import { DICTS, NS, fallbackT, zh } from './strings'
 import type { ClientContext } from './dsh'
 
 // Re-exported for the artifact check. Directory navigation, the pane arithmetic
@@ -54,9 +55,16 @@ export {
   openFile,
   PAGE_ID,
   patchFile,
+  rekeyFile,
+  renameEntry,
   tabElementId,
 } from './state/tabs'
 export { TabStrip, tabLabel } from './studio/TabStrip'
+// The tree's right-click menu: the target family, the action set for one captured
+// row, and where a "new" lands. All pure, so the artifact check drives them.
+export { createTargetDir, ENTRY_TARGET, entryActions, MENU_LABEL_KEYS, registerEntryMenu } from './menu'
+// The bridge between the plugin-lifetime menu and the panel-lifetime handlers.
+export { panelCommands, setPanelCommands } from './state/commands'
 // The tree's type artwork: the Material Icon Theme lookup the artifact check
 // drives directly (it is pure, string-in/data-out) and the component the rows
 // render.
@@ -115,8 +123,26 @@ function label(ctx: ClientContext, key: keyof typeof zh): string {
  * @param ctx - the Client context; registrations are effects of it.
  */
 export function apply(ctx: ClientContext): void {
+  // The plugin's own translator, read per call so a locale switch follows without
+  // re-registering anything. It is what the menu (whose lifetime is this plugin's,
+  // not a panel's) uses for its labels.
+  const t = fallbackT
+
   for (const [locale, dict] of Object.entries(DICTS)) {
     ctx.effect(() => ctx.locale.register(NS, locale, dict), `notebook: locale ${locale}`)
+  }
+
+  // The tree's right-click menu. Registered here rather than from the panel because
+  // a contribution's lifetime is the plugin's: opening the notebook, closing it and
+  // opening it again must not accumulate registrations (a duplicate id fails).
+  //
+  // `ctx.get`, not `inject`: a shell without `ui-context-menu` still draws the panel
+  // and its toolbar, just without the menu. Resolved at activation because a menu
+  // registered later would have to be re-registered on every service change for no
+  // benefit — the service is mounted by the same bundle that renders this panel.
+  const menus = ctx.get('contextMenus')
+  if (menus !== undefined) {
+    ctx.effect(() => registerEntryMenu(menus, t), 'notebook: context menu')
   }
 
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
@@ -126,6 +152,13 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     label: () => label(ctx, 'panel'),
   }, PanelIcon))
+
+  // The menu's glyphs. One entry per action key, each a 16px stroke drawing from
+  // `glyphs.tsx`, so the popup's icons match the panel's own toolbar instead of
+  // arriving with the shell's default placeholders.
+  for (const [key, Icon] of Object.entries(MENU_ICONS)) {
+    ctx.slots.inject('contextMenu.icon', () => ctx.slots.register({ name: 'contextMenu.icon', key }, Icon))
+  }
 
   // The studio page declares one child slot of its own, `scope: session-maybe`,
   // and renders it beside the manuscript. That declaration is what gives the

@@ -66,6 +66,19 @@ export const zh = {
   openHint: '从左侧目录打开一个文件，或点目录标题行的「新建文件」。',
   /** A tab whose file is still being read. */
   loadingFile: '正在读取…',
+  /* The directory tree's right-click menu. */
+  rename: '重命名',
+  delete: '删除',
+  renameHint: '回车确认，Esc 取消',
+  /** Deletion is the one thing here that typing cannot undo, so it asks first. */
+  deleteTitle: '删除',
+  deleteFileQuestion: '确定删除「{name}」？此操作无法撤销。',
+  deleteFolderQuestion: '确定删除文件夹「{name}」及其中全部内容？此操作无法撤销。',
+  deleteConfirm: '删除',
+  cancel: '取消',
+  /** Shown when the folder's size could not be read; the question still stands. */
+  deleteUnknownSize: '无法统计其中的文件数量。',
+  deleteFolderCount: '其中共 {count} 个文件。',
 } as const
 
 export type StringKey = keyof typeof zh
@@ -115,6 +128,16 @@ export const en: Record<StringKey, string> = {
   unsavedSuffix: ', unsaved',
   openHint: 'Open a file from the directory on the left, or use “New file” in its heading.',
   loadingFile: 'Reading…',
+  rename: 'Rename',
+  delete: 'Delete',
+  renameHint: 'Enter to confirm, Esc to cancel',
+  deleteTitle: 'Delete',
+  deleteFileQuestion: 'Delete “{name}”? This cannot be undone.',
+  deleteFolderQuestion: 'Delete the folder “{name}” and everything in it? This cannot be undone.',
+  deleteConfirm: 'Delete',
+  cancel: 'Cancel',
+  deleteUnknownSize: 'The number of files inside could not be counted.',
+  deleteFolderCount: '{count} file(s) inside.',
 }
 
 /** Resolve a key without the framework seat, falling back to Chinese. */

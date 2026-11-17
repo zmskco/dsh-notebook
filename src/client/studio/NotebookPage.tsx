@@ -24,6 +24,7 @@ import { loadPrefs, savePrefs } from '../state/editor-prefs'
 import type { EditorPrefs } from '../state/editor-prefs'
 import { WORKSPACE_PROJECT } from '../api'
 import type { NotebookState } from '../../host/types'
+import type { UseContextMenu } from '../dsh'
 import { ErrorNote, Grip, StyleSheet } from '../ui'
 
 export interface NotebookPageProps {
@@ -38,11 +39,20 @@ export interface NotebookPageProps {
    * studio page without the chat column instead of failing to render.
    */
   renderSlot?: (key: string, owner?: Record<string, unknown>) => React.ReactNode
+  /**
+   * The shell's context-menu hook, when `ui-context-menu` is mounted.
+   *
+   * Present as a standard Slot prop in every scope of this shell, so it arrives here
+   * the same way `t` does. Absent in a shell without that plugin: the tree then has no
+   * right-click menu and everything else works.
+   */
+  useContextMenu?: UseContextMenu
 }
 
 export function NotebookPage(props: NotebookPageProps): React.ReactElement {
   const seat = props.t
   const renderSlot = props.renderSlot
+  const useContextMenu = props.useContextMenu
   const t: T = useCallback((key: StringKey) => {
     if (seat !== undefined) {
       try {
@@ -217,6 +227,9 @@ export function NotebookPage(props: NotebookPageProps): React.ReactElement {
         onToggleChat: toggleChat,
         prefs,
         onPrefsChange: updatePrefs,
+        // Forwarded, not read from a service: the page does not use a menu itself, and
+        // one optional prop keeps the tree renderable without the menu plugin.
+        useContextMenu,
       }),
       // Only between two regions that are both there: a handle with nothing on one
       // side of it would resize a column the author cannot see.

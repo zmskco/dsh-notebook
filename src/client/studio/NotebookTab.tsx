@@ -35,6 +35,10 @@ import {
 } from '../state/file-tree'
 import type { TreeNode } from '../state/file-tree'
 import { editorControls, isMarkdownPath, nextEditorMode } from '../state/markdown'
+import { setPanelCommands } from '../state/commands'
+import { ENTRY_TARGET } from '../menu'
+import type { EntryTarget } from '../menu'
+import type { ContextMenuTarget, UseContextMenu } from '../dsh'
 import {
   closeFile,
   findFile,
@@ -42,6 +46,8 @@ import {
   openFile,
   PAGE_ID,
   patchFile,
+  rekeyFile,
+  renameEntry,
   tabElementId,
 } from '../state/tabs'
 import type { OpenFile } from '../state/tabs'
@@ -54,7 +60,7 @@ import {
   SIZE_STEPS,
 } from '../state/editor-prefs'
 import type { EditorPrefs, FontId, PaperId } from '../state/editor-prefs'
-import { ChatIcon, FilePlusIcon, FolderPlusIcon, RefreshIcon, RevealIcon } from '../glyphs'
+import { ChatIcon, DeleteIcon, FilePlusIcon, FolderPlusIcon, RefreshIcon, RevealIcon } from '../glyphs'
 import { TreeIcon } from '../icons/material'
 import type { ProjectFileEntry } from '../../host/types'
 import type { StringKey, T } from '../strings'
@@ -83,6 +89,14 @@ export interface NotebookTabProps {
   prefs: EditorPrefs
   /** Change one of them; the page remembers the result. */
   onPrefsChange: (patch: Partial<EditorPrefs>) => void
+  /**
+   * The shell's context-menu hook, when it provides one.
+   *
+   * Delivered as a prop rather than read from services so the tree can be rendered
+   * — and checked — without the menu plugin: absent means no right-click menu, and
+   * every row still works.
+   */
+  useContextMenu?: UseContextMenu
 }
 
 /** The dictionary key for each typeface, in the order the picker offers them. */
@@ -128,7 +142,7 @@ export const AUTOSAVE_MS = 900
 // ids the strip uses.
 export { PAGE_ID, tabElementId }
 
-export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onToggleChat, prefs, onPrefsChange }: NotebookTabProps): React.ReactElement {
+export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onToggleChat, prefs, onPrefsChange, useContextMenu }: NotebookTabProps): React.ReactElement {
   const [files, setFiles] = useState<ProjectFileEntry[]>([])
   /**
    * Directories the tree has open.
@@ -178,6 +192,25 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   /** Which create form is open, if any: a file or a directory. */
   const [creating, setCreating] = useState<'file' | 'dir' | undefined>(undefined)
   const [newName, setNewName] = useState('')
+  /**
+   * The entry being renamed in place, and the name typed so far.
+   *
+   * One entry at a time, like the create row: the tree shows one text field, and a
+   * second rename would have to answer what happens to the first one's half-typed
+   * name. The field is the row itself (see `inlineRow`), not a dialog — renaming is
+   * a correction to a label, and moving the eye to a modal for it is the wrong
+   * gesture for a file tree.
+   */
+  const [renaming, setRenaming] = useState<{ path: string, name: string } | undefined>(undefined)
+  /**
+   * The deletion awaiting confirmation.
+   *
+   * Deleting is the one operation in this panel that typing cannot undo, so it asks
+   * — and the question names what it is about to remove, including how many files a
+   * folder holds, because "删除文件夹" and "删除这个装着 40 章的文件夹" are not the
+   * same decision.
+   */
+  const [confirming, setConfirming] = useState<{ path: string, name: string, directory: boolean, files: number | null } | undefined>(undefined)
   /**
    * The unsaved text a save already refused, per path.
    *
@@ -300,22 +333,28 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   }, [loadFiles])
 
   /**
-   * Hand the workspace to the operating system's file manager.
+   * Hand a workspace directory to the operating system's file manager.
    *
-   * A browser cannot open a local folder, so this is the one action that has to
-   * ask the Host; the Host decides which directory (always the workspace), so the
-   * page never names a path. A refusal is reported, not swallowed: the author
-   * clicked something that did not happen.
+   * A browser cannot open a local folder, so this is the one action that has to ask
+   * the Host. The path is a *workspace-relative* one and the Host does the deciding:
+   * it resolves it, proves it is inside the tree, and opens that folder — or the
+   * folder holding that file. Revealing a file therefore lands you beside it, which
+   * is the gesture every file manager has, without this page learning a single
+   * absolute path. A refusal is reported, not swallowed.
+   * @param path - a project-relative path; `''` is the workspace itself.
    */
-  const revealFolder = useCallback(async (): Promise<void> => {
+  const revealInManager = useCallback(async (path: string): Promise<void> => {
     setError(undefined)
     try {
-      const result = await api.reveal()
+      const result = await api.reveal(path)
       if (!result.opened) setError(t('revealFailed'))
     } catch (cause: unknown) {
       setError(messageOf(cause))
     }
   }, [t])
+
+  /** The heading's own control: the workspace itself, as before. */
+  const revealFolder = useCallback((): Promise<void> => revealInManager(''), [revealInManager])
 
   /**
    * Read one file into the tab that is already showing it.
@@ -587,6 +626,172 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   const tree = useMemo(() => buildTree(files), [files])
 
   /**
+   * What one row hands the context menu.
+   *
+   * The tree row's own path and name, not the path of the file that happens to be
+   * open: the menu acts on what was right-clicked, and the shell captures this
+   * object at the moment of the gesture so a later selection cannot redirect it.
+   * The value is wrapped in `{ kind, value }` here rather than deeper in, because the
+   * target family is this plugin's own and the row is the only place that knows it.
+   * @param node - the row's tree node.
+   * @returns the captured menu target.
+   */
+  const entryTarget = (node: TreeNode): ContextMenuTarget => ({
+    kind: ENTRY_TARGET,
+    value: { path: node.path, name: node.name, directory: node.directory } satisfies EntryTarget,
+  })
+
+  /**
+   * The row's menu trigger bindings, when the shell provides the menu.
+   *
+   * `useContextMenu()` is injected into every Slot scope by `ui-context-menu`; a
+   * shell without that plugin hands this component no `useContextMenu` prop at all,
+   * and the tree then simply has no right-click menu — it still works.
+   */
+  const menu = useContextMenu === undefined ? undefined : useContextMenu()
+  const rootMenu = menu?.getTriggerProps({ kind: ENTRY_TARGET, value: { path: '', name: t('library'), directory: true } })
+
+  /**
+   * Begin renaming one entry.
+   *
+   * The field starts with the name selected down to the extension, which is how
+   * every file manager does it: the author usually keeps `.md` and replaces the
+   * title. A name with no extension selects all of it.
+   */
+  const startRenaming = useCallback((path: string): void => {
+    setCreating(undefined)
+    setNewName('')
+    const name = path.split('/').pop() ?? path
+    setRenaming({ path, name })
+  }, [])
+
+  /**
+   * Commit the inline rename.
+   *
+   * The new name is one segment: the Host refuses a separator, so a rename cannot
+   * turn into a move. A name that did not change closes the field without a
+   * request — confirming an unchanged field is not an edit.
+   */
+  const commitRename = useCallback(async (): Promise<void> => {
+    if (renaming === undefined) return
+    const name = renaming.name.trim()
+    if (name.length === 0) {
+      setRenaming(undefined)
+      return
+    }
+    const parent = parentOf(renaming.path)
+    const next = parent === '' ? name : `${parent}/${name}`
+    if (next === renaming.path) {
+      setRenaming(undefined)
+      return
+    }
+    setBusy(true)
+    setError(undefined)
+    try {
+      const renamed = await api.rename(WORKSPACE_PROJECT, renaming.path, name)
+      setFiles(list => list.map(entry => renameEntry(entry, renaming.path, renamed.path, name)))
+      // The open tab follows the file: its path is the write target and the tab's
+      // identity, so a tab left on the old path would save over a file that no
+      // longer exists and the new one would look closed.
+      setOpen(list => list.map(file => rekeyFile(file, renaming.path, renamed.path)))
+      setActive(previous => previous === renaming.path ? renamed.path : previous)
+      if (targetDir === renaming.path) setTargetDir(renamed.path)
+      setRenaming(undefined)
+      void loadFiles()
+    } catch (cause: unknown) {
+      setError(messageOf(cause))
+    } finally {
+      setBusy(false)
+    }
+  }, [loadFiles, renaming, targetDir])
+
+  /**
+   * Ask before deleting one entry.
+   *
+   * A folder's count is read first: the confirmation is only worth interrupting for
+   * if it says what goes with it. A count that cannot be read still asks — the
+   * question is about the folder either way, and refusing to delete because the
+   * count failed would be a worse answer than an unspecific one.
+   */
+  const askDelete = useCallback(async (path: string): Promise<void> => {
+    const entry = files.find(item => item.path === path)
+    if (entry === undefined) return
+    const directory = entry.kind === 'directory'
+    let count: number | null = null
+    if (directory) {
+      try {
+        count = (await api.count(WORKSPACE_PROJECT, path)).files
+      } catch {
+        count = null
+      }
+    }
+    setConfirming({ path, name: entry.name, directory, files: count })
+  }, [files])
+
+  /**
+   * Delete the entry the confirmation was about.
+   *
+   * Every tab under the path closes, and the active one moves to whatever was beside
+   * it — a tab pointing into a folder that no longer exists is a write into nothing.
+   */
+  const confirmDelete = useCallback(async (): Promise<void> => {
+    if (confirming === undefined) return
+    const { path } = confirming
+    setBusy(true)
+    setError(undefined)
+    try {
+      await api.remove(WORKSPACE_PROJECT, path)
+      const gone = (at: string): boolean => at === path || at.startsWith(`${path}/`)
+      // Every tab under the path closes — a tab pointing into a folder that no
+      // longer exists is a write into nothing — and the drawn one moves to its
+      // neighbour, the same rule closing a tab by hand uses.
+      const before = openRef.current
+      const removed = before.filter(file => gone(file.path))
+      const remaining = before.filter(file => !gone(file.path))
+      setOpen(remaining)
+      setActive((previous) => {
+        if (previous === undefined || !gone(previous)) return previous
+        const after = nextActive(removed, path, previous)
+        return remaining.some(file => file.path === after) ? after : remaining[0]?.path
+      })
+      setFiles(list => list.filter(entry => !gone(entry.path)))
+      if (gone(targetDir)) setTargetDir(PROJECT_ROOT)
+      if (renaming !== undefined && gone(renaming.path)) setRenaming(undefined)
+      setConfirming(undefined)
+      void loadFiles()
+    } catch (cause: unknown) {
+      setError(messageOf(cause))
+    } finally {
+      setBusy(false)
+    }
+  }, [confirming, loadFiles, renaming, targetDir])
+
+  /**
+   * Publish this panel's operations for the context menu.
+   *
+   * The menu's contributions live as long as the plugin, while the tree lives as long
+   * as this render — so the menu reaches the panel through `state/commands` instead
+   * of closing over state it cannot see. Republished whenever a handler changes
+   * identity, which is every time the state a handler reads changes.
+   */
+  useEffect(() => setPanelCommands({
+    create: (dir, kind) => {
+      setTargetDir(dir)
+      reveal(dir, true)
+      setCreating(kind)
+      setNewName('')
+    },
+    rename: (path) => {
+      // A folder's row has to be visible before its name can be a field in it.
+      reveal(path)
+      startRenaming(path)
+    },
+    remove: (path) => { void askDelete(path) },
+    refresh: () => { void refreshTree() },
+    reveal: (path) => { void revealInManager(path) },
+  }), [askDelete, refreshTree, reveal, revealInManager, startRenaming])
+
+  /**
    * The empty row a new folder or file is named in.
    *
    * It sits where the thing will appear, with the folder's own icon, so there is no
@@ -639,6 +844,48 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
     for (const node of nodes) {
       // 8px of padding plus 14px per level: the indent *is* the tree.
       const indent = 8 + depth * 14
+      // The row a rename is being typed into: the name becomes a field in place, so
+      // the gesture keeps the row it is about under the eye instead of opening a
+      // dialog somewhere else on the page.
+      if (renaming !== undefined && renaming.path === node.path) {
+        rows.push(React.createElement('li', { key: `rename:${node.path}` },
+          React.createElement('div', {
+            className: 'dsh-notebook-item dsh-notebook-ghost',
+            style: { paddingLeft: indent },
+          },
+          React.createElement(TreeIcon, { name: renaming.name, directory: node.directory, open: true }),
+          React.createElement('input', {
+            className: 'dsh-notebook-ghostInput',
+            value: renaming.name,
+            autoFocus: true,
+            spellCheck: false,
+            'aria-label': t('renameHint'),
+            title: t('renameHint'),
+            // Select the stem and leave the extension: renaming a chapter usually
+            // means replacing its title, not its `.md`.
+            onFocus: (event: React.FocusEvent<HTMLInputElement>) => {
+              const dot = renaming.name.lastIndexOf('.')
+              event.target.setSelectionRange(0, dot > 0 ? dot : renaming.name.length)
+            },
+            onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+              const name = event.target.value
+              setRenaming(current => current === undefined ? undefined : { ...current, name })
+            },
+            onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                setRenaming(undefined)
+                return
+              }
+              if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
+              event.preventDefault()
+              void commitRename()
+            },
+            onBlur: () => { void commitRename() },
+          }))))
+        if (node.directory && expanded.has(node.path)) pushRows(node.children, depth + 1)
+        continue
+      }
       if (node.directory) {
         const open = expanded.has(node.path)
         rows.push(React.createElement('li', { key: `dir:${node.path}` },
@@ -654,6 +901,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
             'aria-expanded': open,
             title: node.path,
             style: { paddingLeft: indent },
+            ...menu?.getTriggerProps(entryTarget(node)),
             onClick: () => { toggleDir(node.path) },
           },
           // The folder *is* the disclosure control: an open folder means the
@@ -680,6 +928,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
           'data-open': findFile(open, node.path) === undefined ? 'false' : 'true',
           title: node.path,
           style: { paddingLeft: indent },
+          ...menu?.getTriggerProps(entryTarget(node)),
           onClick: () => { choose(node.path) },
         },
         React.createElement(TreeIcon, { name: node.name }),
@@ -702,7 +951,15 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
    */
   const header = React.createElement('div', { className: 'dsh-notebook-section' },
     React.createElement('div', { className: 'dsh-notebook-row' },
-      React.createElement('div', { className: 'dsh-notebook-sectionTitle', style: { margin: 0 } }, t('library')),
+      // Right-clicking the heading means "the workspace itself": the menu opened
+      // here offers the two creates and the reveals, but not rename or delete — the
+      // root is not an entry in its own tree and there is nothing to point at.
+      React.createElement('div', {
+        className: 'dsh-notebook-sectionTitle',
+        style: { margin: 0, cursor: 'default' },
+        title: t('library'),
+        ...rootMenu,
+      }, t('library')),
       React.createElement('div', { className: 'dsh-notebook-spacer' }),
       React.createElement(Button, {
         variant: 'icon',
@@ -1008,6 +1265,63 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
       ),
   )
 
+  /**
+   * The delete confirmation.
+   *
+   * A modal is the right weight here and nowhere else in this panel: the one
+   * operation that typing cannot undo gets a question that stops the hand, says
+   * exactly what is about to go (including how many files a folder holds), and puts
+   * the destructive button behind `danger`. `Escape` cancels, and the cancel button
+   * has focus, so a stray Enter does nothing.
+   */
+  const confirmDialog = confirming === undefined ? null : React.createElement('div', {
+    className: 'dsh-notebook-scrim',
+    role: 'presentation',
+    onClick: (event: React.MouseEvent<HTMLDivElement>) => {
+      // Only the backdrop itself dismisses; a click that started inside the card and
+      // ended on it (a drag selecting the file count) must not cancel the question.
+      if (event.target === event.currentTarget) setConfirming(undefined)
+    },
+    onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setConfirming(undefined)
+      }
+    },
+  }, React.createElement('div', {
+    className: 'dsh-notebook-dialog',
+    role: 'alertdialog',
+    'aria-modal': 'true',
+    'aria-label': t('deleteTitle'),
+    'aria-describedby': 'dsh-notebook-delete-question',
+  },
+    React.createElement('div', { className: 'dsh-notebook-dialogTitle' },
+      React.createElement(DeleteIcon, { size: 15 }),
+      t('deleteTitle')),
+    React.createElement('p', { className: 'dsh-notebook-dialogBody', id: 'dsh-notebook-delete-question' },
+      confirming.directory
+        ? t('deleteFolderQuestion').replace('{name}', confirming.name)
+        : t('deleteFileQuestion').replace('{name}', confirming.name)),
+    confirming.directory
+      ? React.createElement('p', { className: 'dsh-notebook-dialogNote' },
+        confirming.files === null
+          ? t('deleteUnknownSize')
+          : t('deleteFolderCount').replace('{count}', String(confirming.files)))
+      : null,
+    React.createElement('div', { className: 'dsh-notebook-dialogActions' },
+      React.createElement(Button, {
+        title: t('cancel'),
+        attrs: { 'data-action': 'delete-cancel' },
+        onClick: () => { setConfirming(undefined) },
+      }, t('cancel')),
+      React.createElement(Button, {
+        variant: 'danger',
+        title: t('deleteConfirm'),
+        disabled: busy,
+        attrs: { 'data-action': 'delete-confirm' },
+        onClick: () => { void confirmDelete() },
+      }, t('deleteConfirm')))))
+
   // Returned as a fragment rather than wrapped in a row of its own, so the page's
   // one flex row holds all three regions as siblings. Nesting a second row here
   // would work visually but would put the boundary between this column and the
@@ -1015,5 +1329,6 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   // the drag handles would then be measuring two different containers.
   return React.createElement(React.Fragment, null, directory,
     React.createElement(Grip, { value: side, label: t('resizeSide'), onResize: onSideResize }),
-    editor)
+    editor,
+    confirmDialog)
 }

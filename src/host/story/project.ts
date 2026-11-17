@@ -6,12 +6,19 @@
  * returns is relative to it.
  *
  * Text goes through `ctx.fs`, so reads and writes inherit the Harness filesystem
- * provider, its sandbox policy, and its canonicalization. Creating a directory is
- * the one exception: `ctx.fs` cannot make one, so `mkdir` is reached at a path the
- * provider already proved is inside the root.
+ * provider, its sandbox policy, and its canonicalization. Two operations have no
+ * provider equivalent and reach `node:fs` instead — creating a directory, and
+ * moving or removing one — always at a path the provider already resolved and
+ * proved is inside the root, exactly as {@link ProjectStore.createDirectory} does.
+ *
+ * Files are different, and deliberately so: deleting and renaming one goes through
+ * `ctx.fs.deleteFile` / `moveFile`, which stamp the same sandbox policy a write
+ * does. A workspace pinned outside the deployment boundary is therefore writable
+ * here and still stamped correctly, and a read-only deployment refuses it at the
+ * seam rather than trusting this file to remember the rule.
  */
-import { mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
+import { mkdir, rename, rm, stat } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import type { FsDirEntry, FsService, FsTarget, SandboxExecutionPolicy } from '../dsh.js'
 import { NotebookError, asNotebookError } from '../errors.js'
 import { assertPathName, assertRelativePath } from './paths.js'
@@ -286,5 +293,165 @@ export class ProjectStore {
   /** Validate one user-supplied name as a single path segment. */
   assertName(value: unknown): string {
     return assertPathName(value)
+  }
+
+  /**
+   * Whether a project-relative path names a directory.
+   *
+   * Asked before a rename or a delete decides *how* to do it: a file goes through
+   * the filesystem provider (which stamps the sandbox policy), a directory through
+   * `node:fs` (which has no provider equivalent). Guessing from a trailing slash
+   * would be guessing about the caller's intent rather than about the disk.
+   * @param project - an opened root.
+   * @param rel - a project-relative POSIX path.
+   * @returns true for a directory; false for a file or anything absent.
+   */
+  async isDirectory(project: OpenRoot, rel: string): Promise<boolean> {
+    const target = await this.resolveInside(project, rel)
+    const info = await this.fs.stat(target).catch(() => undefined)
+    return info?.type === 'directory'
+  }
+
+  /**
+   * Rename one file or directory, in place in its own folder.
+   *
+   * The new name is one path segment, validated exactly as a create name is, so a
+   * rename can never turn into a move: the folder stays where it was and only the
+   * last segment changes. That restriction is deliberate — "rename" in a file tree
+   * means the thing stays put, and a control that could silently relocate a chapter
+   * folder is not the gesture the author made.
+   *
+   * A file keeps its content byte for byte: `moveFile` publishes the source text at
+   * the destination and removes the source, both guarded by the write policy. A
+   * directory is moved with `rename(2)`, which is atomic and cheap even for a
+   * thousand chapters.
+   * @param project - an opened root.
+   * @param rel - the existing project-relative path.
+   * @param name - the new name for it, one segment.
+   * @returns the new project-relative path.
+   * @throws {NotebookError} `not-found` when the source is absent, `conflict` when
+   *   the destination is taken.
+   */
+  async renameEntry(project: OpenRoot, rel: string, name: string): Promise<{ path: string }> {
+    const safe = assertRelativePath(rel)
+    const newName = assertPathName(name)
+    const parent = safe.includes('/') ? safe.slice(0, safe.lastIndexOf('/')) : ''
+    const next = parent === '' ? newName : `${parent}/${newName}`
+    // A rename to the name it already has is a no-op, not a conflict: the user may
+    // simply have confirmed an unchanged field, and both branches below would
+    // otherwise refuse a state that is already what was asked for.
+    if (next === safe) return { path: safe }
+
+    const source = await this.resolveInside(project, safe)
+    if (await this.fs.stat(source) === undefined) {
+      throw new NotebookError('not-found', `${safe} does not exist`)
+    }
+    const destination = await this.resolveInside(project, next)
+    if (await this.fs.stat(destination) !== undefined) {
+      throw new NotebookError('conflict', `${next} already exists`)
+    }
+
+    if (await this.isDirectory(project, safe)) {
+      try {
+        await rename(this.fs.processPath(source), this.fs.processPath(destination))
+      } catch (error: unknown) {
+        throw asNotebookError(error, `cannot rename ${safe}`)
+      }
+      return { path: next }
+    }
+
+    try {
+      await this.fs.moveFile(source, destination, {}, undefined, this.writePolicy)
+    } catch (error: unknown) {
+      throw asNotebookError(error, `cannot rename ${safe}`)
+    }
+    return { path: next }
+  }
+
+  /**
+   * Delete one file or directory.
+   *
+   * A directory goes with everything under it, which is what a file manager does
+   * and what "delete this folder" means. The panel asks first and says how much is
+   * inside (see `api.delete`), because this is the one operation in the plugin that
+   * cannot be undone by typing.
+   *
+   * Containment is checked before anything is removed, so a symlink pointing out of
+   * the workspace is refused rather than followed.
+   * @param project - an opened root.
+   * @param rel - the project-relative path to remove.
+   * @returns the path that was removed, and whether it was a directory.
+   * @throws {NotebookError} `not-found` when the path is absent.
+   */
+  async deleteEntry(project: OpenRoot, rel: string): Promise<{ path: string; directory: boolean }> {
+    const safe = assertRelativePath(rel)
+    const target = await this.resolveInside(project, safe)
+    if (await this.fs.stat(target) === undefined) {
+      throw new NotebookError('not-found', `${safe} does not exist`)
+    }
+    if (await this.isDirectory(project, safe)) {
+      try {
+        await rm(this.fs.processPath(target), { recursive: true, force: false })
+      } catch (error: unknown) {
+        throw asNotebookError(error, `cannot delete ${safe}`)
+      }
+      return { path: safe, directory: true }
+    }
+    try {
+      await this.fs.deleteFile(target, undefined, undefined, this.writePolicy)
+    } catch (error: unknown) {
+      throw asNotebookError(error, `cannot delete ${safe}`)
+    }
+    return { path: safe, directory: false }
+  }
+
+  /**
+   * The absolute directory a path should be revealed in.
+   *
+   * "Show this in the file manager" means: the folder itself for a folder, and the
+   * folder containing it for a file — the file manager's own selection gesture is
+   * platform-specific and unreliable (`explorer /select,` starts a second shell that
+   * does not always surface), while opening a directory is the one launch this
+   * plugin has already measured on every platform.
+   * @param project - an opened root.
+   * @param rel - a project-relative path, or `''` for the workspace itself.
+   * @returns an absolute directory path, proven to be inside the root.
+   */
+  async revealDirectoryFor(project: OpenRoot, rel: string): Promise<string> {
+    if (rel === '') return project.abs
+    const target = await this.resolveInside(project, rel)
+    if (await this.isDirectory(project, rel)) return this.fs.processPath(target)
+    return dirname(this.fs.processPath(target))
+  }
+
+  /**
+   * How many files a directory holds, for a delete confirmation.
+   *
+   * Read through the same provider and the same skips as the tree, so the number
+   * the dialog shows is the number the author can see. A directory that cannot be
+   * read counts as unknown (`null`) rather than as empty.
+   * @param project - an opened root.
+   * @param rel - a project-relative directory path.
+   * @returns the recursive file count, or null when it could not be read.
+   */
+  async countFilesUnder(project: OpenRoot, rel: string): Promise<number | null> {
+    try {
+      let total = 0
+      const walk = async (dir: FsTarget, depth: number): Promise<void> => {
+        if (depth > MAX_TREE_DEPTH || total >= MAX_TREE_ENTRIES) return
+        for (const entry of await this.fs.listDir(dir)) {
+          if (entry.type === 'directory') {
+            if (SKIP_DIRS.has(entry.name)) continue
+            await walk(entry.target, depth + 1)
+          } else if (entry.type === 'file') {
+            total += 1
+          }
+        }
+      }
+      await walk(await this.resolveInside(project, rel), 0)
+      return total
+    } catch {
+      return null
+    }
   }
 }

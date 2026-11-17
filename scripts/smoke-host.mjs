@@ -68,6 +68,36 @@ function createFs(rootDir) {
       await writeFile(key(target), content, 'utf8')
       return { operation: 'update', version: 'written', before: null, after: 'written' }
     },
+    /**
+     * Remove one regular file, as the real provider does.
+     *
+     * The contract is the reason this is a stub of its own rather than a `rm` in the
+     * store: a directory is `FS_NOT_REGULAR_FILE` here, so a test that "deletes" a
+     * folder through this seam would be testing a path the provider never takes.
+     */
+    async deleteFile(target) {
+      const info = await stat(key(target)).catch(() => undefined)
+      if (info === undefined) throw Object.assign(new Error('missing'), { code: 'FS_STALE_VERSION' })
+      if (!info.isFile()) throw Object.assign(new Error('not a regular file'), { code: 'FS_NOT_REGULAR_FILE' })
+      const before = await readFile(key(target), 'utf8')
+      await rm(key(target))
+      return { before }
+    },
+    /**
+     * Publish the source text at the destination, then remove the source — the same
+     * two effects, in the same order, as the real `moveFile`.
+     */
+    async moveFile(source, destination) {
+      const before = await readFile(key(source), 'utf8')
+      await mkdir(dirname(key(destination)), { recursive: true })
+      await writeFile(key(destination), before, 'utf8')
+      await rm(key(source))
+      return {
+        sourceBefore: before,
+        destination: { operation: 'create', version: 'moved', before: null, after: before },
+        sourceDeleted: true,
+      }
+    },
     async listDir(target) {
       const entries = await readdir(key(target), { withFileTypes: true })
       return entries.map((entry) => ({
@@ -256,10 +286,63 @@ try {
   check('op=reveal targets the workspace directory',
     reveal.status === 200 && reveal.body.dir === root && reveal.body.args.join(' ').includes(root),
     JSON.stringify(reveal.body))
-  const sneaky = await call('reveal', { params: { path: 'C:\\Windows' }, body: { dryRun: true } })
-  check('op=reveal ignores any path the caller sends',
-    sneaky.status === 200 && !sneaky.body.args.join(' ').includes('C:\\Windows'),
-    JSON.stringify(sneaky.body))
+  // A path is accepted now, but only a workspace-relative one: the Host resolves it and
+  // proves it is inside the tree before opening anything, so an absolute path is still
+  // refused rather than followed.
+  const sneaky = await call('reveal', { body: { dryRun: true, path: 'C:\\Windows' } })
+  check('op=reveal refuses an absolute path',
+    sneaky.status === 400, `${String(sneaky.status)} ${JSON.stringify(sneaky.body)}`)
+  const traverse = await call('reveal', { body: { dryRun: true, path: '../../etc' } })
+  check('op=reveal refuses a climbing path', traverse.status === 400, String(traverse.status))
+  await call('create-dir', { body: { project: '', dir: '', name: '可打开' } })
+  const folderReveal = await call('reveal', { body: { dryRun: true, path: '可打开' } })
+  check('op=reveal opens the folder that was named',
+    folderReveal.status === 200 && folderReveal.body.dir.endsWith('可打开'), JSON.stringify(folderReveal.body))
+  const fileReveal = await call('reveal', { body: { dryRun: true, path: '手稿' } })
+  check('op=reveal on a file opens the folder holding it',
+    fileReveal.status === 200 && fileReveal.body.dir === root, JSON.stringify(fileReveal.body))
+
+  // --- rename and delete ----------------------------------------------------------------
+  const renamed = await call('rename', { body: { project: '', path: '手稿', name: '手稿-改名' } })
+  check('op=rename answers with the new path',
+    renamed.status === 200 && renamed.body.path === '手稿-改名' && renamed.body.from === '手稿',
+    JSON.stringify(renamed.body))
+  const afterRename = await call('files', { params: { project: '' } })
+  check('the renamed file is listed under its new name',
+    afterRename.body.files.some(entry => entry.path === '手稿-改名')
+    && !afterRename.body.files.some(entry => entry.path === '手稿'),
+    afterRename.body.files.map(entry => entry.path).join(' '))
+  const keptText = await call('file', { params: { project: '', path: '手稿-改名' } })
+  // The file was created earlier with a seeded heading; a rename must keep whatever is
+  // in it, not re-seed it and not re-encode it.
+  check('a rename keeps the file content',
+    keptText.status === 200 && keptText.body.content.startsWith('# 手稿') && keptText.body.content.includes('雨落在窗上'),
+    JSON.stringify(keptText.body))
+  const clash = await call('rename', { body: { project: '', path: '手稿-改名', name: 'README.md' } })
+  check('a rename onto an existing name is a 409', clash.status === 409, String(clash.status))
+  const slash = await call('rename', { body: { project: '', path: '手稿-改名', name: 'a/b' } })
+  check('a rename is one segment, never a move', slash.status === 400, String(slash.status))
+  const absent = await call('rename', { body: { project: '', path: '没有这个', name: 'x' } })
+  check('renaming something absent is a 404', absent.status === 404, String(absent.status))
+  const noop = await call('rename', { body: { project: '', path: '手稿-改名', name: '手稿-改名' } })
+  check('renaming to the name it already has is a no-op, not a conflict',
+    noop.status === 200 && noop.body.path === '手稿-改名', JSON.stringify(noop.body))
+
+  await call('create-file', { body: { project: '', dir: '可打开', title: '内部' } })
+  const counted = await call('count', { params: { project: '', path: '可打开' } })
+  check('op=count reports how many files a folder holds',
+    counted.status === 200 && counted.body.files === 1, JSON.stringify(counted.body))
+  const removedFile = await call('delete', { body: { project: '', path: '内部不存在' } })
+  check('deleting something absent is a 404', removedFile.status === 404, String(removedFile.status))
+  const removed = await call('delete', { body: { project: '', path: '可打开' } })
+  check('op=delete removes a folder and reports what it was',
+    removed.status === 200 && removed.body.directory === true, JSON.stringify(removed.body))
+  const afterDelete = await call('files', { params: { project: '' } })
+  check('the deleted folder and its file are both gone from the listing',
+    !afterDelete.body.files.some(entry => entry.path === '可打开' || entry.path.startsWith('可打开/')),
+    afterDelete.body.files.map(entry => entry.path).join(' '))
+  const deleteEscape = await call('delete', { body: { project: '', path: '../外面' } })
+  check('deleting outside the workspace is refused', deleteEscape.status === 400, String(deleteEscape.status))
 
   // --- the Session's working directory ------------------------------------------------
   const focus = await call('focus', { params: { session: 's-main' }, body: { project: '' } })
