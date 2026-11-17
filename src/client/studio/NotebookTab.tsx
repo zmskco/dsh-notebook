@@ -36,9 +36,10 @@ import {
 import type { TreeNode } from '../state/file-tree'
 import { editorControls, isMarkdownPath, nextEditorMode } from '../state/markdown'
 import { setPanelCommands } from '../state/commands'
+import { triggerProps } from '../state/menus'
 import { ENTRY_TARGET } from '../menu'
 import type { EntryTarget } from '../menu'
-import type { ContextMenuTarget, UseContextMenu } from '../dsh'
+import type { ContextMenuTarget } from '../dsh'
 import {
   closeFile,
   findFile,
@@ -89,14 +90,6 @@ export interface NotebookTabProps {
   prefs: EditorPrefs
   /** Change one of them; the page remembers the result. */
   onPrefsChange: (patch: Partial<EditorPrefs>) => void
-  /**
-   * The shell's context-menu hook, when it provides one.
-   *
-   * Delivered as a prop rather than read from services so the tree can be rendered
-   * — and checked — without the menu plugin: absent means no right-click menu, and
-   * every row still works.
-   */
-  useContextMenu?: UseContextMenu
 }
 
 /** The dictionary key for each typeface, in the order the picker offers them. */
@@ -142,7 +135,7 @@ export const AUTOSAVE_MS = 900
 // ids the strip uses.
 export { PAGE_ID, tabElementId }
 
-export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onToggleChat, prefs, onPrefsChange, useContextMenu }: NotebookTabProps): React.ReactElement {
+export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onToggleChat, prefs, onPrefsChange }: NotebookTabProps): React.ReactElement {
   const [files, setFiles] = useState<ProjectFileEntry[]>([])
   /**
    * Directories the tree has open.
@@ -642,14 +635,17 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   })
 
   /**
-   * The row's menu trigger bindings, when the shell provides the menu.
+   * The row's menu trigger bindings.
    *
-   * `useContextMenu()` is injected into every Slot scope by `ui-context-menu`; a
-   * shell without that plugin hands this component no `useContextMenu` prop at all,
-   * and the tree then simply has no right-click menu — it still works.
+   * Read from the module the plugin published, not from a prop: `useContextMenu()`
+   * never reached this component, and `ctx.contextMenus.open()` is the shell's other
+   * supported entry point. With no service published the handlers are empty and the
+   * browser's own menu stays, which is the right degradation.
    */
-  const menu = useContextMenu === undefined ? undefined : useContextMenu()
-  const rootMenu = menu?.getTriggerProps({ kind: ENTRY_TARGET, value: { path: '', name: t('library'), directory: true } })
+  const rootMenu = triggerProps({
+    kind: ENTRY_TARGET,
+    value: { path: '', name: t('library'), directory: true } satisfies EntryTarget,
+  })
 
   /**
    * Begin renaming one entry.
@@ -901,7 +897,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
             'aria-expanded': open,
             title: node.path,
             style: { paddingLeft: indent },
-            ...menu?.getTriggerProps(entryTarget(node)),
+            ...triggerProps(entryTarget(node)),
             onClick: () => { toggleDir(node.path) },
           },
           // The folder *is* the disclosure control: an open folder means the
@@ -928,7 +924,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
           'data-open': findFile(open, node.path) === undefined ? 'false' : 'true',
           title: node.path,
           style: { paddingLeft: indent },
-          ...menu?.getTriggerProps(entryTarget(node)),
+          ...triggerProps(entryTarget(node)),
           onClick: () => { choose(node.path) },
         },
         React.createElement(TreeIcon, { name: node.name }),

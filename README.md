@@ -82,6 +82,8 @@ DSH 本身**支持**右键菜单：`ui-context-menu` 是 web-app bundle 的一�
 
 本插件注册了**自己的目标家族** `notebookEntry`，而不是往自带的 `file` / `directory` 家族里加动作——那两个家族是文件侧栏和对话里的文件引用在用的，挂到上面会让"在这里新建文件夹"出现在别处的文件上。
 
+**手势用的是 `ctx.contextMenus.open()`，不是 `useContextMenu()`。** 后者是 DSH 文档里的推荐路径（`provideRoot` 注入每个 Slot 作用域），但实测没有传到本面板的组件上——行上仍然是浏览器的原生菜单（返回 / 重新加载 / 另存为）。`open()` 是文档中另一条明确支持的路径（"special editors and canvases can call it directly"），所以 `apply` 在激活时取一次服务、存进模块，行自己 `preventDefault()` 后按视口坐标打开；键盘的 `Shift+F10` / ContextMenu 键同样由本插件处理，锚在行的左下角。
+
 | 菜单项 | 行为 |
 | --- | --- |
 | 新建文件 / 新建文件夹 | 右键**文件夹**→建在里面；右键**文件**→建在它旁边；右键列标题→建在工作区根目录 |
@@ -97,7 +99,7 @@ DSH 本身**支持**右键菜单：`ui-context-menu` 是 web-app bundle 的一�
 - **改名会带着标签页一起走**：标签的 path 是写盘的键，所以改完名后该文件的标签留在原位、缓冲不丢；整个文件夹改名时，其下所有标签的路径一起重写。
 - **删除会关掉该路径下的所有标签**，当前页落到相邻标签上——指向一个已不存在文件的标签就是往空处写。
 - **只读部署会拒绝**：文件走 `ctx.fs`（自带策略），目录走 `node:fs`（没有策略），所以 API 层对目录类操作单独做了一次只读检查，和写文件给出同一段说明。
-- **没有菜单也能用**：`ui-context-menu` 不在（`ctx.get('contextMenus')` 为 undefined）时，面板照常工作，只是没有右键菜单——服务是可选读取的，没有写进 `inject`。
+- **没有菜单也能用**：`ui-context-menu` 不在（`ctx.get('contextMenus')` 为 undefined）时，面板照常工作，行上不绑定任何手势、保留浏览器自己的菜单——服务是可选读取的，没有写进 `inject`。
 
 删写在 Host 侧对应两个新 op（`rename` / `delete`，另有只读的 `count` 供确认框统计）；文件用 `fs.moveFile` / `fs.deleteFile`，目录用 `node:fs` 的 `rename` / `rm`，两者都先经 `resolveInside` 证明在根内。
 

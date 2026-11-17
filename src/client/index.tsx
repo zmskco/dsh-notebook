@@ -15,6 +15,7 @@ import { ConversationPane, CHAT_SLOT } from './studio/ConversationPane'
 import { MENU_ICONS, PanelIcon } from './glyphs'
 import { NotebookPage } from './studio/NotebookPage'
 import { registerEntryMenu } from './menu'
+import { setMenuService } from './state/menus'
 import { DICTS, NS, fallbackT, zh } from './strings'
 import type { ClientContext } from './dsh'
 
@@ -65,6 +66,8 @@ export { TabStrip, tabLabel } from './studio/TabStrip'
 export { createTargetDir, ENTRY_TARGET, entryActions, MENU_LABEL_KEYS, registerEntryMenu } from './menu'
 // The bridge between the plugin-lifetime menu and the panel-lifetime handlers.
 export { panelCommands, setPanelCommands } from './state/commands'
+// The shell's menu service, republished for the rows that call `open()` directly.
+export { menuService, setMenuService, triggerProps } from './state/menus'
 // The tree's type artwork: the Material Icon Theme lookup the artifact check
 // drives directly (it is pure, string-in/data-out) and the component the rows
 // render.
@@ -132,16 +135,18 @@ export function apply(ctx: ClientContext): void {
     ctx.effect(() => ctx.locale.register(NS, locale, dict), `notebook: locale ${locale}`)
   }
 
-  // The tree's right-click menu. Registered here rather than from the panel because
-  // a contribution's lifetime is the plugin's: opening the notebook, closing it and
+  // The tree's right-click menu. Registered here rather than from the panel because a
+  // contribution's lifetime is the plugin's: opening the notebook, closing it and
   // opening it again must not accumulate registrations (a duplicate id fails).
   //
-  // `ctx.get`, not `inject`: a shell without `ui-context-menu` still draws the panel
-  // and its toolbar, just without the menu. Resolved at activation because a menu
-  // registered later would have to be re-registered on every service change for no
-  // benefit — the service is mounted by the same bundle that renders this panel.
+  // The service is published rather than passed down as a prop. `useContextMenu()` —
+  // the documented hook — did not reach the panel's component (its rows kept showing
+  // the browser's menu), and `ctx.contextMenus.open()` is the other supported path, so
+  // the rows call that directly. `ctx.get` stays optional: a shell without the menu
+  // plugin still draws the panel, it just keeps the browser's own menu.
   const menus = ctx.get('contextMenus')
   if (menus !== undefined) {
+    setMenuService(menus)
     ctx.effect(() => registerEntryMenu(menus, t), 'notebook: context menu')
   }
 

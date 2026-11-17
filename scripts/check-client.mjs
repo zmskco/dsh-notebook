@@ -520,6 +520,75 @@ check('every menu glyph is registered in the icon slot',
 check('the menu labels are all in both dictionaries',
   exports.MENU_LABEL_KEYS.every(key => typeof exports.DICTS.zh?.[key] === 'string' && typeof exports.DICTS.en[key] === 'string'),
   exports.MENU_LABEL_KEYS.filter(key => typeof exports.DICTS.zh?.[key] !== 'string').join(','))
+// The rows must actually take the gesture. The panel binds it from the service the
+// plugin published (`ctx.contextMenus.open()`), not from the `useContextMenu` prop —
+// that hook never reached this component and the rows kept showing the browser menu.
+const menuOpens = []
+exports.setMenuService({
+  register: () => () => {},
+  notify: () => {},
+  open: (target, point) => { menuOpens.push({ target, point }) },
+})
+/** The panel as the shell renders it, for the gesture checks below. */
+const gestureColumn = (canChat) => NotebookTab({
+  t: key => key,
+  side: DEFAULT_LAYOUT.side,
+  onSideResize: () => {},
+  canChat,
+  chatVisible: false,
+  onToggleChat: () => {},
+  prefs: { font: 'system', size: 15, paper: 'plain' },
+  onPrefsChange: () => {},
+})
+const liveRows = []
+walk(gestureColumn(false), (element) => {
+  if (typeof element.props?.onContextMenu === 'function') liveRows.push(element)
+})
+// The stub render has no listing (state starts empty), so the only element with a
+// gesture is the directory column's heading — which is the workspace-root target.
+check('the tree takes the right-click gesture', liveRows.length >= 1, String(liveRows.length))
+check('file and folder rows bind the same gesture',
+  // They are built from the same helper as the heading; without a listing the stub
+  // cannot render one, so the binding is asserted at the source.
+  (source.match(/\.\.\.triggerProps\(entryTarget\(node\)\)/g) ?? []).length === 2,
+  String((source.match(/\.\.\.triggerProps\(entryTarget\(node\)\)/g) ?? []).length))
+check('the row suppresses the browser menu and opens the shared one',
+  (() => {
+    const row = liveRows[0]
+    let prevented = false
+    row.props.onContextMenu({ preventDefault: () => { prevented = true }, clientX: 40, clientY: 90 })
+    const first = menuOpens[0]
+    return prevented && menuOpens.length === 1 && first?.point?.x === 40 && first?.point?.y === 90
+      && first?.target?.kind === 'notebookEntry'
+  })(), JSON.stringify(menuOpens[0] ?? null))
+check('the captured target carries the row it was opened on',
+  typeof menuOpens[0]?.target?.value?.path === 'string'
+  && typeof menuOpens[0]?.target?.value?.directory === 'boolean', JSON.stringify(menuOpens[0]?.target?.value))
+check('the keyboard opens the menu too',
+  (() => {
+    const before = menuOpens.length
+    let prevented = false
+    liveRows[0].props.onKeyDown({
+      key: 'F10', shiftKey: true, preventDefault: () => { prevented = true },
+      currentTarget: { getBoundingClientRect: () => ({ left: 10, bottom: 30 }) },
+    })
+    return prevented && menuOpens.length === before + 1 && menuOpens.at(-1)?.point?.y === 30
+  })(), JSON.stringify(menuOpens.at(-1) ?? null))
+check('an unrelated key is left alone',
+  (() => {
+    const before = menuOpens.length
+    liveRows[0].props.onKeyDown({
+      key: 'a', shiftKey: false, preventDefault: () => {},
+      currentTarget: { getBoundingClientRect: () => ({ left: 0, bottom: 0 }) },
+    })
+    return menuOpens.length === before
+  })(), '')
+// Without the service the row must not swallow the gesture: a shell with no menu
+// plugin keeps the browser's own menu.
+exports.setMenuService(undefined)
+let bareHandlers = 0
+walk(gestureColumn(false), (element) => { if (typeof element.props?.onContextMenu === 'function') bareHandlers += 1 })
+check('with no menu service the browser menu is left in place', bareHandlers === 0, String(bareHandlers))
 
 // --- styles ------------------------------------------------------------------------
 const css = /const CSS = `([\s\S]*?)`;/.exec(source)?.[1] ?? ''
