@@ -13,7 +13,8 @@
  * test, so the decision logic and the policy it stamps are exercised directly
  * here.
  */
-import { join, resolve, sep } from 'node:path'
+import { join, resolve } from 'node:path'
+import { homedir } from 'node:os'
 import { assessWriteAccess, profilePatchPath, storyWritePolicy, writeAccessGuidance } from '../lib/story/sandbox.js'
 import { fallbackRootDir } from '../lib/story/bootstrap.js'
 import { storyRootFor } from '../lib/story/root.js'
@@ -124,15 +125,35 @@ check('guidance restates mode, because config is replaced wholesale',
   'an entry setting only one of the two would reset the other')
 check('guidance is spelled out over several lines', text.split('\n').length > 5)
 
+/**
+ * Set or clear one environment variable, restoring it later.
+ *
+ * `process.env` holds strings only: assigning `undefined` stores the six-character
+ * string `"undefined"`, which is truthy and non-empty. A restore written as
+ * `process.env.X = previous` therefore *set* the variable when it had been unset,
+ * and every later check that read it saw `"undefined"` — which is exactly how this
+ * script failed in a clean terminal (`DSH_HOME` unset) while passing in one that
+ * inherited it from dsh. Clearing needs `delete`.
+ * @param name - the variable.
+ * @param value - the value to set, or `undefined` to remove the variable.
+ */
+function setEnv(name, value) {
+  if (value === undefined) delete process.env[name]
+  else process.env[name] = value
+}
+
 const previousHome = process.env.DSH_HOME
 const previousProfile = process.env.DSH_PROFILE
-process.env.DSH_HOME = win ? 'C:\\Users\\holdlg\\.dsh' : '/home/u/.dsh'
-process.env.DSH_PROFILE = 'web'
+setEnv('DSH_HOME', win ? 'C:\\Users\\holdlg\\.dsh' : '/home/u/.dsh')
+setEnv('DSH_PROFILE', 'web')
 check('the guidance points at the profile patch file the user actually edits',
   profilePatchPath() === join(process.env.DSH_HOME, 'profiles', 'web', 'cordis.patch.yml'),
   profilePatchPath())
-process.env.DSH_HOME = previousHome
-process.env.DSH_PROFILE = previousProfile
+setEnv('DSH_HOME', previousHome)
+setEnv('DSH_PROFILE', previousProfile)
+check('the environment was restored, not filled with the string "undefined"',
+  process.env.DSH_HOME === previousHome && process.env.DSH_PROFILE === previousProfile,
+  `DSH_HOME=${String(process.env.DSH_HOME)} DSH_PROFILE=${String(process.env.DSH_PROFILE)}`)
 
 console.log('\nroot resolution: the workspace is the root');
 
@@ -149,9 +170,21 @@ check('an empty cwd is treated as no Session at all',
   storyRootFor(fallback, '').source === 'fallback')
 check('the fallback is the deployment boundary, not a shelf this plugin invented',
   fallbackRootDir({ workspaceRoot: boundary }) === boundary)
-const homed = fallbackRootDir(undefined)
-check('without a boundary the fallback is an absolute directory under DSH_HOME',
-  resolve(homed) === homed && homed.includes(`${sep}notebook`), homed)
+// Both branches of the last resort are pinned rather than read from the ambient
+// environment: this script used to assert a shape against whatever `DSH_HOME`
+// happened to be, which is how it passed under dsh (which sets it) and failed in a
+// clean terminal (which does not).
+setEnv('DSH_HOME', win ? 'C:\\dsh-home' : '/dsh-home')
+const underHome = fallbackRootDir(undefined)
+check('with no boundary the fallback lands under DSH_HOME',
+  underHome === join(process.env.DSH_HOME, 'notebook'), underHome)
+setEnv('DSH_HOME', undefined)
+const underUser = fallbackRootDir(undefined)
+check('with no DSH_HOME either, the fallback lands under the user home',
+  underUser === join(homedir(), '.dsh', 'notebook'), underUser)
+check('every fallback is an absolute directory, never a bare name',
+  resolve(underHome) === underHome && resolve(underUser) === underUser, `${underHome} / ${underUser}`)
+setEnv('DSH_HOME', previousHome)
 check('no rule can report a pinned root any more',
   storyRootFor(fallback, workspace).source !== 'override'
   && storyRootFor(fallback, undefined).source !== 'override',

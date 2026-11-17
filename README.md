@@ -221,7 +221,7 @@ npm pack --dry-run     # 看 tarball 内容
 
 - `scripts/check-client.mjs`：产物是 lazy-CJS（`__ModuleLoader__.load`，只用 `react` 外部）；槽位注册、字典、树、布局、字体/纸色、编辑器往返、标签页模型（开关/切换/关闭落点/同名标签/脏标记）、固定头与滚动区、两栏 header 的控件归属（标题行六个图标与顺序、禁用态、`cursor` 跟着改名/删除走；对话开关在工具栏最右端且只有它不随窄栏滚动）、缩进（单一 `rowIndent`、160px 上限、「缩进不撑宽行」与「列表不横向滚动」、上限 ≤ 最窄列留给图标的余量）、目录树类型图标的查找规则、以及「故事机制零残留」。
 - `scripts/smoke-host.mjs`：不用 DSH 进程即可驱动整个控制面（61 项断言）：建文件/目录、读写、路径逃逸、README、reveal、focus、写边界盖章、「根跟着调用方 Session 走」、「旧 rootDir 只警告不生效」。
-- `scripts/check-sandbox.mjs`：写边界报告（只读/模式/盖章/引导文案/根解析）。
+- `scripts/check-sandbox.mjs`：写边界报告（只读/模式/盖章/引导文案/根解析），35 项；最后的兜底根两条分支都**显式钉住** `DSH_HOME`（设有/未设各一条），不读环境里碰巧是什么。
 - `scripts/vendor-material-icons.mjs`：从本机 VS Code 扩展目录收图标、生成关联表；用 `MATERIAL_ICON_THEME_DIR` 可指定别的安装位置。
 
 ## 限制
