@@ -1,7 +1,9 @@
 # 笔记本 (dsh-notebook) —— 忽略清单
 #
-# 入库的：src/、scripts/、locale/、icon.svg、cordis.patch.yml、
-# tsconfig*.json、tsdown.config.ts、pnpm-workspace.yaml、pnpm-lock.yaml、README.md。
+# 入库的：src/、scripts/、locale/、icon.png、cordis.patch.yml、
+# tsconfig*.json、tsdown.config.ts、pnpm-workspace.yaml、pnpm-lock.yaml、README.md，
+# 以及目录树图标的收录结果 assets/material-icons/ 与它生成的
+# src/client/icons/material.generated.ts（构建与发布都要用；见 README「目录树图标」）。
 # 其中 locale/*.json 是插件清单读的元数据，是运行时必需品，
 # 不要因为"看起来是外部配置"而挪出仓库。
 

@@ -136,14 +136,35 @@ export const api = {
   createDir: (project: string, dir: string, name: string): Promise<{ path: string }> =>
     call<{ path: string }>('create-dir', {}, { project, dir, name }),
   /**
-   * Show the workspace in the operating system's file manager.
+   * Show the workspace — or one entry in it — in the operating system's file
+   * manager.
    *
-   * The Host decides the directory (the workspace it resolved for this Session);
-   * nothing here can name a path, which is what keeps a browser from being used to
-   * open arbitrary local folders.
+   * The Host decides the directory: it resolves the path against the workspace and
+   * opens that folder, or the folder holding that file. Nothing here can name a
+   * directory the Host did not prove is inside the tree, which is what keeps a
+   * browser from being used to open arbitrary local folders.
    */
-  reveal: (): Promise<{ dir: string; opened: boolean }> =>
-    call<{ dir: string; opened: boolean }>('reveal', {}, {}),
+  reveal: (path?: string): Promise<{ dir: string; opened: boolean }> =>
+    call<{ dir: string; opened: boolean }>('reveal', {}, path === undefined || path === '' ? {} : { path }),
+  /**
+   * Rename one entry in place.
+   *
+   * The new name is a single segment: the Host refuses a name carrying a separator,
+   * so a rename cannot move a chapter folder somewhere else in the tree.
+   */
+  rename: (project: string, path: string, name: string): Promise<{ path: string; from: string }> =>
+    call<{ path: string; from: string }>('rename', {}, { project, path, name }),
+  /**
+   * Delete one file, or one folder with everything in it.
+   *
+   * Irreversible: the panel asks first, and uses {@link api.count} to say how much
+   * the confirmation would remove.
+   */
+  remove: (project: string, path: string): Promise<{ path: string; directory: boolean }> =>
+    call<{ path: string; directory: boolean }>('delete', {}, { project, path }),
+  /** How many files sit under a folder, for the delete confirmation. */
+  count: (project: string, path: string): Promise<{ path: string; files: number | null }> =>
+    call<{ path: string; files: number | null }>('count', { project, path }),
   /**
    * Ask the Host for the workspace's `README.md`, creating it on first open.
    *

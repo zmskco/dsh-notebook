@@ -1,22 +1,33 @@
 /**
- * The panel's icons.
+ * The panel's own icons.
  *
- * **One set: [Lucide](https://lucide.dev) (ISC licence).** Every glyph is a
- * 24×24 stroke drawing — `fill: none`, `stroke: currentColor`, 2px stroke, round
- * caps and joins — so the tree, the heading and the sidebar all read as one
- * family, and an icon can be swapped for another Lucide name without a redraw.
+ * **The tree is not drawn here.** A file or folder row carries the drawing the
+ * VS Code extension Material Icon Theme assigns to its name — see
+ * `icons/material.tsx` — because a notebook browsing a real workspace shows
+ * `main.ts`, `笔记.md` and `素材/` side by side, and one generic file outline for
+ * all three says less than the type marks every editor already teaches.
  *
- * They are inlined as path data rather than imported from the package: the client
- * bundle has no runtime dependency outside React (see `check:client`), and Lucide
- * ships hundreds of kilobytes of components for the six shapes this panel needs.
+ * **Everything else is [Lucide](https://lucide.dev) (ISC licence).** The toolbar's
+ * actions, the column switches and the conversation toggle are 24×24 stroke
+ * drawings — `fill: none`, `stroke: currentColor`, 2px stroke, round caps and
+ * joins — so the heading and the sidebar read as one family, and an icon can be
+ * swapped for another Lucide name without a redraw. The plugin's own mark,
+ * {@link PanelIcon}, is the exception: it is the package's colorful artwork.
+ *
+ * Lucide's glyphs are inlined as path data rather than imported from the package:
+ * the client bundle has no runtime dependency outside React (see `check:client`),
+ * and Lucide ships hundreds of kilobytes of components for the shapes the
+ * toolbar needs.
  *
  * Sizes are one number, not six: {@link GLYPH_SIZE} for everything inside the
- * panel (so a folder row and the buttons above it are the same height), and one
- * slightly larger size for the sidebar entry, which the shell draws on its own
- * scale. Stroke width is never adjusted per size — scaling the whole 24-grid is
- * what keeps the weight consistent.
+ * panel (so a toolbar button and a tree row are the same height — the tree's
+ * drawings ask for the same edge from `TREE_ICON_SIZE`), and one slightly larger
+ * size for the sidebar entry, which the shell draws on its own scale. Stroke
+ * width is never adjusted per size — scaling the whole 24-grid is what keeps the
+ * weight consistent.
  */
 import * as React from 'react'
+import iconUrl from '../../icon.png'
 
 /** The edge length every in-panel glyph uses. */
 export const GLYPH_SIZE = 16
@@ -51,68 +62,29 @@ function Glyph({ size = GLYPH_SIZE, children }: {
 export interface PanelIconProps {
   /** Edge length in px. The sidebar draws it at its own scale. */
   size?: number
+  /** Whether the panel is selected; the artwork is the same either way. */
+  active?: boolean
 }
 
 /**
- * The plugin's own mark: Lucide's `notebook`.
+ * The plugin's own mark: the colorful gem artwork, `icon.png`.
  *
- * A bound notebook is what the product is called and what it does — the same
- * drawing the package ships as `icon.svg`, so the sidebar entry and the inventory
- * card cannot drift apart.
+ * The package owns one piece of art — the faceted blue gem on its dark tile — and
+ * the sidebar entry shows that art itself rather than a line drawing of it, so the
+ * row looks like the inventory card. The build inlines the PNG (`loader: {'.png':
+ * 'dataurl'}` in `tsdown.config.ts`), because a Client component has no access to
+ * the package filesystem.
  */
 export function PanelIcon({ size = 18 }: PanelIconProps): React.ReactElement {
-  return React.createElement(Glyph, { size },
-    React.createElement('path', { d: 'M2 6h4' }),
-    React.createElement('path', { d: 'M2 10h4' }),
-    React.createElement('path', { d: 'M2 14h4' }),
-    React.createElement('path', { d: 'M2 18h4' }),
-    React.createElement('rect', { width: 16, height: 20, x: 4, y: 2, rx: 2 }),
-    React.createElement('path', { d: 'M16 2v20' }))
-}
-
-export interface FolderIconProps {
-  /** Whether the directory is showing its children; the artwork opens with it. */
-  open?: boolean
-  /** Edge length in px. */
-  size?: number
-}
-
-/**
- * A directory, open or closed: Lucide's `folder` / `folder-open`.
- *
- * The open state is what replaced the leading disclosure triangle. A caret is a
- * second mark saying the same thing the folder beside it already says, and on a
- * narrow row the two read as two controls; here the folder itself is the control
- * and its opening is the state — the children underneath say the rest.
- */
-export function FolderIcon({ open = false, size = GLYPH_SIZE }: FolderIconProps): React.ReactElement {
-  // Open: the flap folded out in front of the folder's back.
-  const openArt = React.createElement('path', {
-    d: 'm6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2',
+  return React.createElement('img', {
+    src: iconUrl,
+    width: size,
+    height: size,
+    alt: '',
+    'aria-hidden': true,
+    focusable: false,
+    style: { display: 'block', objectFit: 'contain' },
   })
-  // Closed: one panel with a tab.
-  const closedArt = React.createElement('path', {
-    d: 'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z',
-  })
-  return React.createElement(Glyph, { size }, open ? openArt : closedArt)
-}
-
-export interface FileIconProps {
-  /** Edge length in px. */
-  size?: number
-}
-
-/**
- * One file in the tree: Lucide's `file`.
- *
- * Paired with {@link FolderIcon} so a row says what it is before its name is
- * read — a tree where only one kind of row carried artwork would read as if the
- * other kind were something else.
- */
-export function FileIcon({ size = GLYPH_SIZE }: FileIconProps): React.ReactElement {
-  return React.createElement(Glyph, { size },
-    React.createElement('path', { d: 'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z' }),
-    React.createElement('path', { d: 'M14 2v4a2 2 0 0 0 2 2h4' }))
 }
 
 export interface PlusIconProps {
@@ -188,3 +160,42 @@ export function ChatIcon({ size = GLYPH_SIZE }: ChatIconProps): React.ReactEleme
   return React.createElement(Glyph, { size },
     React.createElement('path', { d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' }))
 }
+
+/**
+ * The two glyphs the right-click menu adds: Lucide's `pencil` and `trash-2`.
+ *
+ * They are the same stroke family as the toolbar, which is why the popup's icons
+ * line up with the panel's own rather than looking like a second icon set. The
+ * popup renders them at its own size; the drawing scales because the whole 24-grid
+ * does (see the module comment).
+ */
+export function RenameIcon({ size = GLYPH_SIZE }: PlusIconProps): React.ReactElement {
+  return React.createElement(Glyph, { size },
+    React.createElement('path', { d: 'M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497Z' }),
+    React.createElement('path', { d: 'm15 5 4 4' }))
+}
+
+/** A bin with its lid: Lucide's `trash-2`; see {@link RenameIcon}. */
+export function DeleteIcon({ size = GLYPH_SIZE }: PlusIconProps): React.ReactElement {
+  return React.createElement(Glyph, { size },
+    React.createElement('path', { d: 'M3 6h18' }),
+    React.createElement('path', { d: 'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6' }),
+    React.createElement('path', { d: 'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' }),
+    React.createElement('path', { d: 'M10 11v6' }),
+    React.createElement('path', { d: 'M14 11v6' }))
+}
+
+/**
+ * The menu's glyph set, by the icon key each action declares.
+ *
+ * The keys are the action ids (`menu.ts`), so a menu action and its drawing cannot
+ * drift apart: one map, registered into the `contextMenu.icon` slot at activation.
+ */
+export const MENU_ICONS = {
+  'notebook.newFile': FilePlusIcon,
+  'notebook.newFolder': FolderPlusIcon,
+  'notebook.rename': RenameIcon,
+  'notebook.remove': DeleteIcon,
+  'notebook.refresh': RefreshIcon,
+  'notebook.reveal': RevealIcon,
+} as const

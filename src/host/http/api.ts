@@ -17,6 +17,7 @@ import type { ConnectionService, FsService, Logger, SandboxPolicyService } from 
 import { NotebookError, asNotebookError } from '../errors.js'
 import { assertPathName, assertRelativePath } from '../story/paths.js'
 import { assessWriteAccess, writeAccessGuidance } from '../story/sandbox.js'
+import type { WriteAccess } from '../story/sandbox.js'
 import { WORKSPACE_PROJECT, type OpenRoot, type ProjectStore } from '../story/project.js'
 import { workspaceDirFor, workspaceStore } from '../story/workspace.js'
 import { revealCommand, revealInFileManager } from './reveal.js'
@@ -40,6 +41,22 @@ function failure(error: unknown): Response {
   const notebookError = asNotebookError(error)
   const body: ApiErrorBody = { code: notebookError.code, message: notebookError.message }
   return json(body, STATUS_BY_CODE[notebookError.code])
+}
+
+/**
+ * Refuse a mutation on a deployment that cannot write.
+ *
+ * `ctx.fs` refuses a file write on its own (the policy is stamped on it), but a
+ * directory is changed through `node:fs`, which no policy guards. Without this
+ * check a read-only deployment would silently allow "new folder", rename and
+ * delete — three operations whose refusal every other write in the panel already
+ * explains with the same guidance.
+ * @param access - this request's write assessment.
+ * @param workspaceDir - the directory it was assessed against, for the message.
+ */
+function refuseReadOnly(access: WriteAccess, workspaceDir: string): void {
+  if (access.writable) return
+  throw new NotebookError('forbidden', writeAccessGuidance(workspaceDir, access) ?? 'this workspace is read-only')
 }
 
 /**
@@ -175,18 +192,53 @@ export function registerApi(deps: ApiDeps): () => Promise<void> {
           return json({ project: project.id, dir: project.abs, focused })
         }
         case 'reveal': {
-          // Show the workspace in the OS file manager. The directory is always the
-          // one this request resolved to; no path is ever taken from the client, so
-          // the panel cannot be talked into opening somewhere else. `dryRun` is the
-          // test hook: it answers what would be launched without launching it.
+          // Show the workspace in the OS file manager. The path is optional and, when
+          // given, is resolved and re-checked against the workspace before anything is
+          // opened — so the panel can reveal a folder (or the folder holding a file)
+          // without the browser ever naming a directory the Host did not prove is
+          // inside the tree it shows. `dryRun` is the test hook: it answers what
+          // would be launched without launching it.
           const body = await readBody(request)
+          const wanted = typeof body.path === 'string' && body.path.length > 0
+            ? assertRelativePath(body.path)
+            : ''
+          const { project } = await open(WORKSPACE_PROJECT)
+          const target = await workspace.revealDirectoryFor(project, wanted)
           if (body.dryRun === true) {
-            const launch = revealCommand(process.platform, workspaceDir)
-            return json({ dir: workspaceDir, command: launch.command, args: launch.args, opened: false })
+            const launch = revealCommand(process.platform, target)
+            return json({ dir: target, command: launch.command, args: launch.args, opened: false })
           }
-          const opened = await revealInFileManager(workspaceDir)
-          if (!opened) log.warn(`cannot open a file manager for ${workspaceDir}`)
-          return json({ dir: workspaceDir, opened })
+          const opened = await revealInFileManager(target)
+          if (!opened) log.warn(`cannot open a file manager for ${target}`)
+          return json({ dir: target, opened })
+        }
+        case 'rename': {
+          // One entry, in place: the new name is a single segment, so this cannot
+          // move a chapter folder somewhere else in the tree.
+          const body = await readBody(request)
+          const { store, project } = await open(body.project)
+          const path = assertRelativePath(typeof body.path === 'string' ? body.path : '')
+          const name = assertPathName(body.name)
+          refuseReadOnly(access, workspaceDir)
+          const renamed = await store.renameEntry(project, path, name)
+          return json({ ...renamed, from: path })
+        }
+        case 'delete': {
+          // Irreversible, so the answer says what went: the panel asks first and
+          // needs to tell the author what the confirmation actually removed.
+          const body = await readBody(request)
+          const { store, project } = await open(body.project)
+          const path = assertRelativePath(typeof body.path === 'string' ? body.path : '')
+          refuseReadOnly(access, workspaceDir)
+          const removed = await store.deleteEntry(project, path)
+          return json(removed)
+        }
+        case 'count': {
+          // How much a delete would take, for the confirmation. Read-only, so it is
+          // answered even on a deployment that refuses the delete itself.
+          const { store, project } = await open(url.searchParams.get('project'))
+          const path = assertRelativePath(url.searchParams.get('path') ?? '')
+          return json({ path, files: await store.countFilesUnder(project, path) })
         }
         case 'ensure-readme': {
           // The one file the panel adds to a workspace on first open. Never an

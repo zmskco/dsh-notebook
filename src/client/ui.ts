@@ -18,15 +18,25 @@ const CSS = `
 .dsh-notebook-spacer{flex:1}
 .dsh-notebook-body{flex:1;min-height:0;display:flex}
 .dsh-notebook-pane{display:flex;flex-direction:column;min-height:0;min-width:0}
-/* The two outer columns size themselves from the variables the page sets on the
-   row, and they may shrink — never grow — so the manuscript keeps every spare
-   pixel. A window narrowed after a drag squeezes them instead of pushing the
-   conversation column off the edge where it cannot be reached again. */
-.dsh-notebook-side{width:var(--ns-side,268px);flex:0 1 auto;min-width:170px;border-right:1px solid var(--dsw-alias-border-l1);overflow:auto}
-.dsh-notebook-main{flex:1;min-width:0;overflow:auto}
+/* The directory column: a fixed heading over its own scrolling list, the same shape
+   as the editor beside it. The heading must not scroll away — it carries the create
+   and refresh controls — so the column does not scroll; the list does. That is also
+   what lets the heading's rule meet the editor toolbar's on one line.
+   The right border is the *only* line between the tree and the manuscript; the grip
+   beside it fills the header band's own segment so the rule above does not break. */
+.dsh-notebook-side{width:var(--ns-side,268px);flex:0 1 auto;min-width:170px;border-right:1px solid var(--dsw-alias-border-l1);overflow:hidden}
+/* The editor column does **not** scroll: the head above its page is a fixed band, and
+   a scrolling column would carry that band away with the text. What scrolls is the
+   page inside it (the ProseMirror host, or the source textarea). */
+.dsh-notebook-main{flex:1;min-width:0;overflow:hidden}
 /* The drag handle sits between two regions and *is* their separator, so it is
-   transparent until touched rather than a second line beside the borders. */
-.dsh-notebook-grip{flex:none;width:6px;cursor:col-resize;background:transparent;align-self:stretch}
+   transparent until touched rather than a second line beside the borders.
+   Its other job is the one the eye notices first: the handle's 6px is a *gap* in the
+   header rule that runs across the panel, so it carries that one pixel itself. Each
+   column draws its own segment (the directory heading's and the toolbar's, both 44px
+   tall); this fills the strip between them and the line is unbroken. */
+.dsh-notebook-grip{flex:none;width:6px;cursor:col-resize;background:transparent;align-self:stretch;position:relative}
+.dsh-notebook-grip::after{content:'';position:absolute;left:0;right:0;top:43px;height:1px;background:var(--dsw-alias-border-l1);pointer-events:none}
 .dsh-notebook-grip:hover,.dsh-notebook-grip:focus-visible,.dsh-notebook-grip[data-active="true"]{background:var(--dsw-alias-border-l2);outline:none}
 body.dsh-notebook-grabbing{user-select:none;cursor:col-resize}
 .dsh-notebook-chat{width:var(--ns-chat,400px);flex:0 1 auto;min-width:220px;min-height:0;display:flex;flex-direction:column;border-left:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base)}
@@ -37,8 +47,18 @@ body.dsh-notebook-grabbing{user-select:none;cursor:col-resize}
    arrive without session= and be answered from the deployment fallback root
    instead of the workspace the operator opened. */
 .dsh-notebook-body[data-talking="off"] .dsh-notebook-chat{display:none}
-.dsh-notebook-section{padding:12px 16px;border-bottom:1px solid var(--dsw-alias-border-l1)}
-.dsh-notebook-sectionTitle{font-size:12px;font-weight:600;color:var(--dsw-alias-label-secondary);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px}
+/* The panel's one title row.
+   Both columns open with a band of the same height whose bottom rule is at the same
+   offset, so the directory heading and the editor's toolbar read as one line across
+   the panel — and the drag handle between them carries its own 1px of that line, so
+   there is no gap where the grips are. 44px is the number both the directory heading
+   and the editor toolbar use, and the grip puts its rule at top 43px to match;
+   changing one means changing all three. */
+.dsh-notebook-section{display:flex;align-items:center;flex:none;height:44px;box-sizing:border-box;padding:0 10px 0 16px;border-bottom:1px solid var(--dsw-alias-border-l1)}
+.dsh-notebook-section .dsh-notebook-row{flex:1;min-width:0;gap:2px}
+/* The heading is the panel's name: small caps carry it, not size or colour — the
+   column below is what the eye is for. */
+.dsh-notebook-sectionTitle{font-size:12px;font-weight:600;color:var(--dsw-alias-label-secondary);letter-spacing:.02em;margin:0}
 .dsh-notebook-row{display:flex;align-items:center;gap:8px}
 .dsh-notebook-rowWrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .dsh-notebook-col{display:flex;flex-direction:column;gap:6px}
@@ -64,6 +84,11 @@ button.dsh-notebook-btn[data-variant="secondary"]:hover:not(:disabled){backgroun
 /* Icon-only buttons: square, no text padding, and the glyph is the button. */
 button.dsh-notebook-btn[data-variant="icon"]{padding:4px;line-height:0;color:var(--dsw-alias-label-secondary);background:transparent;border-color:transparent}
 button.dsh-notebook-btn[data-variant="icon"]:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
+/* The one destructive control in the panel: filled with the error colour, because a
+   delete button that looks like every other button is a delete button you press by
+   accident. */
+button.dsh-notebook-btn[data-variant="danger"]{background:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-bg-base);font-weight:600}
+button.dsh-notebook-btn[data-variant="danger"]:hover:not(:disabled){border-color:var(--dsw-alias-state-error-primary);filter:brightness(1.08)}
 .dsh-notebook-input,.dsh-notebook-textarea,.dsh-notebook-select{font:inherit;width:100%;box-sizing:border-box;padding:5px 8px;border-radius:6px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}
 /* The width:100% above is for a field stacked under its label. Placed directly in
    a row it claims the whole line, and since the row wraps, the buttons beside it
@@ -93,16 +118,26 @@ button.dsh-notebook-btn[data-variant="icon"]:hover:not(:disabled){background:var
 .dsh-notebook-ghostInput{flex:1;min-width:0;font:inherit;color:inherit;background:transparent;border:0;outline:none;padding:0}
 .dsh-notebook-ghostInput::placeholder{color:var(--dsw-alias-label-secondary)}
 .dsh-notebook-itemName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* The tree's type glyph: a folder or a file, so a row says what it is before the
-   name is read. The folder's open state lives in the artwork itself (see
-   glyphs.tsx) — that is what replaced the leading disclosure triangle. */
-.dsh-notebook-treeIcon{flex:none;display:flex;align-items:center;color:var(--dsw-alias-label-secondary)}
+/* The tree's type artwork: Material Icon Theme's own colorful drawing for the
+   file or folder (see icons/material.tsx). It is inline SVG, so the box is sized
+   and the drawing fills it; nothing here recolours it — these icons carry their
+   own palette, which is exactly what makes a tree read at a glance. */
+.dsh-notebook-treeIcon{flex:none;display:block;line-height:0}
+.dsh-notebook-treeIcon svg{display:block;width:100%;height:100%}
+/* The theme's palette is drawn for a light editor surface, and a few of its marks
+   are pale — the json yellow and table green sit at roughly 2:1 against 简白's
+   white. They never carry the row on their own (the name is always beside them),
+   so this is a hairline shadow on the dark-on-light papers only: it detaches the
+   pale shapes from the paper without recolouring the artwork. 黑夜 already has
+   5:1 and up, so it keeps the drawings exactly as the theme ships them. */
+.dsh-notebook-root[data-paper="plain"] .dsh-notebook-treeIcon svg,
+.dsh-notebook-root[data-paper="elegant"] .dsh-notebook-treeIcon svg,
+.dsh-notebook-root[data-paper="green"] .dsh-notebook-treeIcon svg{filter:drop-shadow(0 0 .5px var(--dsh-notebook-paper-soft))}
 /* The refresh icon turns while a re-read is in flight: the click is answered
    immediately even when the walk takes a moment. */
 @keyframes dsh-notebook-spin{to{transform:rotate(360deg)}}
 button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s linear infinite}
 @media (prefers-reduced-motion:reduce){button.dsh-notebook-btn[data-busy="true"] svg{animation:none}}
-.dsh-notebook-item[data-active="true"] .dsh-notebook-treeIcon{color:var(--dsw-alias-label-primary)}
 .dsh-notebook-count{font-size:11.5px;color:var(--dsw-alias-label-secondary);flex:none}
 /* The sidebar's directory browser: a breadcrumb strip over a scrolling listing.
    Rows reuse the .dsh-notebook-item rules above, so only the trail needs its own. */
@@ -120,15 +155,93 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 .dsh-notebook-warn{border:1px solid var(--dsw-alias-state-warn-primary);border-radius:6px;background:var(--dsw-alias-bg-layer-1);padding:9px 11px;display:flex;flex-direction:column;gap:6px}
 .dsh-notebook-warnTitle{color:var(--dsw-alias-state-warn-primary);font-size:12px;font-weight:600}
 .dsh-notebook-warnBody{margin:0;white-space:pre-wrap;font-size:11.5px;line-height:1.6;color:var(--dsw-alias-label-secondary)}
-.dsh-notebook-empty{padding:24px 16px;color:var(--dsw-alias-label-secondary);font-size:12.5px}
+.dsh-notebook-empty{flex:1;padding:24px 16px;color:var(--dsw-alias-label-secondary);font-size:12.5px}
+/* The delete confirmation: the panel's only modal, because it guards the only
+   operation typing cannot undo. The scrim is the paper darkened rather than a black
+   veil, so the panel does not flash to grey on a dark paper. */
+.dsh-notebook-scrim{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:24px;background:color-mix(in srgb,var(--dsw-alias-bg-base) 55%,transparent)}
+.dsh-notebook-dialog{display:flex;flex-direction:column;gap:10px;box-sizing:border-box;width:min(420px,100%);padding:16px 18px;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);box-shadow:0 12px 32px rgba(0,0,0,.18)}
+.dsh-notebook-dialogTitle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--dsw-alias-state-error-primary)}
+.dsh-notebook-dialogBody{margin:0;font-size:12.5px;line-height:1.65;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere}
+.dsh-notebook-dialogNote{margin:0;font-size:12px;color:var(--dsw-alias-label-secondary)}
+/* The destructive button is on the right, past the safe one: reading order leads the
+   hand away from it. */
+.dsh-notebook-dialogActions{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}
 .dsh-notebook-progress{height:4px;border-radius:999px;background:var(--dsw-alias-bg-layer-2);overflow:hidden}
 .dsh-notebook-progress > i{display:block;height:100%;background:var(--dsw-alias-brand-primary)}
 .dsh-notebook-chips{display:flex;flex-wrap:wrap;gap:4px}
 .dsh-notebook-chip{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer;font-family:inherit}
 .dsh-notebook-chip[data-on="true"]{background:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-primary-foreground)}
-.dsh-notebook-editor{display:flex;flex-direction:column;gap:10px;padding:14px 16px;height:100%;box-sizing:border-box}
-.dsh-notebook-editorBody{flex:1;min-height:320px;display:flex}
+/* The page region: from the tab band's bottom edge to the column's, with only enough
+   padding to keep prose off the edges. No top padding — the tinted band already ends
+   there, and a gap would put a strip of paper between the drawn tab and its own text. */
+.dsh-notebook-editor{flex:1;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0 0 0;overflow:hidden}
+/* The page's own height is the column's, minus the fixed head: a zero minimum here
+   is what lets the scrolling host inside it be shorter than its content. */
+.dsh-notebook-editorBody{flex:1;min-height:0;display:flex}
 .dsh-notebook-grow{flex:1;min-height:0}
+/* The editor column is a fixed head over a scrolling page. The head never moves and
+   never shrinks: a control that has to be scrolled back to is a control that stops
+   being used, and the strip is where the eye goes to change file. Only the page
+   below it scrolls, which is also what lets several files stay open without the
+   strip drifting away. */
+.dsh-notebook-editorHead{flex:none;display:flex;flex-direction:column;background:var(--dsw-alias-bg-base)}
+/* The toolbar is exactly the directory heading's height, on purpose: the two
+   columns' rules then land on one unbroken line across the panel (the grips fill
+   their own 6px of that line). A fixed height — not a minimum — is what keeps that
+   promise when the column is narrow: the row does not wrap and grow, it scrolls
+   sideways, exactly like the tab strip below it. */
+.dsh-notebook-toolbar{display:flex;align-items:center;flex:none;box-sizing:border-box;height:44px;padding:0 12px;border-bottom:1px solid var(--dsw-alias-border-l1);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.dsh-notebook-toolbar::-webkit-scrollbar{height:0}
+.dsh-notebook-mainError{padding:8px 14px 0;flex:none}
+/* The tab band.
+   It is the only tinted strip in the panel, and that tint is the whole trick: the
+   drawn tab is painted in the *paper* colour and has no bottom edge, so it opens
+   straight into the page below and the two read as one surface. Inactive tabs sit on
+   the tint, which is what makes the drawn one look like the top of the editor rather
+   than the last thing clicked. Nothing here draws a border — a band whose colour
+   simply ends is a quieter boundary than a rule, and the page no longer needs a
+   frame of its own (see the .dsh-notebook-doc rule below). */
+.dsh-notebook-tabs{display:flex;align-items:flex-end;gap:8px;box-sizing:border-box;min-height:33px;padding:3px 8px 0;background:var(--dsw-alias-bg-layer-1)}
+.dsh-notebook-tabList{display:flex;align-items:flex-end;gap:3px;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.dsh-notebook-tabList::-webkit-scrollbar{height:4px}
+.dsh-notebook-tabList::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:999px}
+/* The drawn file's count and save state: a fixed, non-wrapping group at the right
+   end of the strip. It lives here rather than in the toolbar above because the
+   toolbar scrolls sideways and a number gaining a digit while the author types must
+   never move anything. Centred against the band, since the tabs hang from its
+   bottom edge. */
+.dsh-notebook-tabMeta{flex:none;display:flex;align-items:center;align-self:center;gap:10px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--dsw-alias-label-secondary)}
+/* A tab is as wide as its name: the strip scrolls, so truncating a long Chinese
+   title would hide exactly the characters that tell two tabs apart. The cap is
+   generous, only to stop one absurd name from owning the strip.
+   Compact on purpose — 28px tall, 6px of horizontal padding — because the band sits
+   between two already-dense rows and every pixel here is taken from the writing
+   area. */
+.dsh-notebook-tab{display:flex;align-items:center;gap:5px;flex:none;max-width:340px;box-sizing:border-box;height:28px;padding:0 4px 0 7px;border:0;border-radius:6px 6px 0 0;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;cursor:pointer;user-select:none}
+/* Hover is a hairline ring, not a fill: the band is already a tint, and a second
+   tint on top of it is invisible on this sheet (both layer tokens are one colour). */
+.dsh-notebook-tab:hover{box-shadow:inset 0 0 0 1px var(--dsw-alias-border-l1);color:var(--dsw-alias-label-primary)}
+/* The drawn tab: paper, no bottom edge, and a 2px brand bar along its top. The bar
+   is the same mark the file's own row in the tree uses, so "this is the open one" is
+   one language across the panel. */
+.dsh-notebook-tab[data-active="true"]{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-weight:600;box-shadow:inset 0 2px 0 0 var(--dsw-alias-brand-primary)}
+.dsh-notebook-tab[data-active="true"]:hover{box-shadow:inset 0 2px 0 0 var(--dsw-alias-brand-primary),inset 0 0 0 1px var(--dsw-alias-border-l1)}
+.dsh-notebook-tabName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* An unsaved tab's dot, shown only on tabs that are *not* drawn: the toolbar's
+   未保存 already describes the file on screen, and two marks for one fact in one
+   band read as two problems. */
+.dsh-notebook-tabDot{flex:none;width:6px;height:6px;border-radius:999px;background:var(--dsw-alias-state-warn-primary)}
+/* The close control appears on the drawn tab and on hover: a row of ×'s beside
+   every name competes with the names, which is what the strip is for. */
+.dsh-notebook-tabClose{flex:none;width:18px;height:18px;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;opacity:0;font:inherit;font-size:14px;line-height:1;cursor:pointer}
+.dsh-notebook-tab:hover .dsh-notebook-tabClose,.dsh-notebook-tab[data-active="true"] .dsh-notebook-tabClose,.dsh-notebook-tabClose:focus-visible{opacity:.55}
+.dsh-notebook-tabClose:hover{opacity:1;background:var(--dsw-alias-bg-layer-2)}
+.dsh-notebook-tabClose:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px;opacity:1}
+/* An open file that is not the drawn tab. Deliberately weaker than the drawn row's
+   inset brand bar: "open" is a fact about the tab strip, not a second selection —
+   but it does have to be visible, so the name is tinted with the brand colour. */
+.dsh-notebook-item[data-open="true"]:not([data-active="true"]) .dsh-notebook-itemName{color:var(--dsw-alias-brand-primary)}
 /* The panel's paper. Four palettes the author picks between — 简白, 雅致, 黑夜,
    绿荫 — and the only fixed colours in this sheet: a paper cannot follow the
    interface theme, because it *is* the surface the author wants to look at.
@@ -145,14 +258,18 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
    accent and the ink that goes on top of it — because a UI theme's accent is
    chosen against its own surface, and a near-black accent on 黑夜 would vanish. */
 .dsh-notebook-root[data-paper]{background:var(--dsh-notebook-paper-bg);color:var(--dsh-notebook-paper-ink);--dsw-alias-bg-base:var(--dsh-notebook-paper-bg);--dsw-alias-label-primary:var(--dsh-notebook-paper-ink);--dsw-alias-label-secondary:var(--dsh-notebook-paper-soft);--dsw-alias-border-l1:var(--dsh-notebook-paper-line);--dsw-alias-border-l2:var(--dsh-notebook-paper-line);--dsw-alias-bg-layer-1:var(--dsh-notebook-paper-layer);--dsw-alias-bg-layer-2:var(--dsh-notebook-paper-layer);--dsw-alias-brand-primary:var(--dsh-notebook-paper-brand);--dsw-alias-label-primary-foreground:var(--dsh-notebook-paper-on);--dsw-alias-state-warn-primary:var(--dsh-notebook-paper-warn)}
-/* The page inside the panel: the paper is already behind it, so this box only
-   frames the words and carries the author's typeface and size. */
-.dsh-notebook-doc{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;border-radius:8px;border:1px solid var(--dsh-notebook-paper-line,var(--dsw-alias-border-l1));background:transparent;color:inherit;font-family:var(--dsh-notebook-font,system-ui);font-size:var(--dsh-notebook-size,15px)}
-.dsh-notebook-doc .dsh-notebook-textarea{flex:1;min-height:0;background:transparent;border:0;border-radius:0;color:inherit;font-family:inherit;font-size:inherit;line-height:1.9;padding:16px 20px;resize:none}
+/* The page inside the panel.
+   **No frame.** There used to be a 1px border and an 8px radius here, which made the
+   manuscript a card floating on the paper — three nested rectangles (panel, page,
+   text) where the writing surface should be one. The tab band above it is the only
+   boundary the page needs, and the drawn tab opens straight into it. */
+.dsh-notebook-doc{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;border:0;border-radius:0;background:transparent;color:inherit;font-family:var(--dsh-notebook-font,system-ui);font-size:var(--dsh-notebook-size,15px)}
+.dsh-notebook-doc .dsh-notebook-textarea{flex:1;min-height:0;background:transparent;border:0;border-radius:0;color:inherit;font-family:inherit;font-size:inherit;line-height:1.9;padding:14px 22px 40px;resize:none}
 .dsh-notebook-doc .dsh-notebook-textarea:focus{border-color:transparent}
 /* The writing surface's scroll container. ProseMirror owns the editable element
-   inside it; this box keeps the rows above the page put while it moves. */
-.dsh-notebook-pmHost{flex:1;min-height:0;overflow:auto;padding:16px 20px 40px}
+   inside it; this box is the only thing in the column that scrolls, and its padding
+   is the frame the removed border used to be — a margin of paper, not a line. */
+.dsh-notebook-pmHost{flex:1;min-height:0;overflow:auto;padding:14px 22px 48px}
 /* The editor itself. Everything under .dsh-notebook-pm is document text: a writer's
    page, not interface chrome — which is why the bare tag selectors below are safe
    (they are scoped to this one class) and why sizes are in em, so the author's
@@ -175,14 +292,27 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 .dsh-notebook-pm pre code{padding:0;border:0;background:transparent;font-size:1em}
 .dsh-notebook-pm hr{margin:1.4em 0;border:0;border-top:1px solid var(--dsw-alias-border-l1)}
 .dsh-notebook-pm a{color:var(--dsw-alias-brand-primary);text-decoration:underline}
-/* The picker row above the page: faces, size, paper, then the file actions, with
-   thin rules between the groups instead of a word for each. */
-.dsh-notebook-typebar{display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:none}
-.dsh-notebook-typebar .dsh-notebook-select{width:auto;flex:0 0 auto;padding:3px 6px;font-size:12px}
-/* The pickers here are a run of small buttons, not a form: tighter padding keeps
-   five typefaces and four papers on two lines instead of four. */
-.dsh-notebook-typebar .dsh-notebook-btn{padding:3px 8px;font-size:12px}
-.dsh-notebook-typebar .dsh-notebook-btn[data-variant="primary"]{margin-left:4px}
+/* The picker row above the page. Three groups — faces, size, paper — then the mode
+   pair, each in its own segmented control, with a rule between the groups instead of
+   a word for each: the buttons say what they are (a one-character face name, a
+   number, a paper name), and a label only cost width.
+   A segmented control is what makes one choice visible without giving every option a
+   hard border: the group is one soft tray, the chosen option is the raised chip
+   inside it. Four boxes with borders side by side read as four buttons that all
+   claim to be pressed. */
+.dsh-notebook-typebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:none;min-width:0}
+.dsh-notebook-seg{display:flex;align-items:center;gap:2px;flex:none;padding:2px;border-radius:8px;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);box-sizing:border-box;height:28px}
+/* The chips inside a tray are buttons with no border of their own; the data-selected
+   attribute keeps working as the state, only its look changes here. */
+.dsh-notebook-seg > button.dsh-notebook-btn{height:22px;min-width:24px;padding:0 7px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:400;line-height:1;box-sizing:border-box}
+.dsh-notebook-seg > button.dsh-notebook-btn:hover:not(:disabled){background:var(--dsw-alias-bg-layer-2);border:0;color:var(--dsw-alias-label-primary)}
+.dsh-notebook-seg > button.dsh-notebook-btn[data-selected="true"]{background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-weight:600;box-shadow:0 0 0 1px var(--dsw-alias-border-l1)}
+.dsh-notebook-seg > button.dsh-notebook-btn[data-selected="true"]:hover:not(:disabled){background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary)}
+/* The size picker is a tray with one number in it, so it lines up with the trays
+   beside it instead of standing taller as a native select. */
+.dsh-notebook-typebar .dsh-notebook-select{width:auto;flex:none;height:28px;box-sizing:border-box;padding:0 4px 0 8px;border-radius:8px;background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);font-size:12px}
+/* A rule between groups, the height of the trays it separates. */
+.dsh-notebook-typebar .dsh-notebook-divider{height:20px;margin:0 2px}
 /* A block the schema does not model — front matter, a table — kept as the markdown
    it was written as, and visibly not part of the prose being edited. */
 .dsh-notebook-pmRaw{border-style:dashed;color:var(--dsw-alias-label-secondary);font-size:.78em;line-height:1.6}
@@ -284,7 +414,7 @@ export interface ButtonProps {
   children?: React.ReactNode
   onClick?: () => void
   disabled?: boolean
-  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'icon'
+  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'icon' | 'danger'
   title?: string
   type?: 'button' | 'submit'
   /**

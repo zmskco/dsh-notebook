@@ -12,9 +12,11 @@
  * that ordering irrelevant.
  */
 import { ConversationPane, CHAT_SLOT } from './studio/ConversationPane'
-import { PanelIcon } from './glyphs'
+import { MENU_ICONS, PanelIcon } from './glyphs'
 import { NotebookPage } from './studio/NotebookPage'
-import { DICTS, NS, zh } from './strings'
+import { registerEntryMenu } from './menu'
+import { setMenuService } from './state/menus'
+import { DICTS, NS, fallbackT, zh } from './strings'
 import type { ClientContext } from './dsh'
 
 // Re-exported for the artifact check. Directory navigation, the pane arithmetic
@@ -44,6 +46,42 @@ export {
 // with the name the locale metadata hands to DSH's plugin inventory.
 export { DICTS, en, zh } from './strings'
 export { conversationShell, ConversationPane, CHAT_SLOT } from './studio/ConversationPane'
+// The tab model: pure, so the artifact check drives the open/close/switch rules
+// directly instead of through a render it cannot drive.
+export {
+  closeFile,
+  fileNameOf,
+  findFile,
+  nextActive,
+  openFile,
+  PAGE_ID,
+  patchFile,
+  rekeyFile,
+  renameEntry,
+  tabElementId,
+} from './state/tabs'
+export { TabStrip, tabLabel } from './studio/TabStrip'
+// The tree's right-click menu: the target family, the action set for one captured
+// row, and where a "new" lands. All pure, so the artifact check drives them.
+export { createTargetDir, ENTRY_TARGET, entryActions, MENU_LABEL_KEYS, registerEntryMenu } from './menu'
+// The bridge between the plugin-lifetime menu and the panel-lifetime handlers.
+export { panelCommands, setPanelCommands } from './state/commands'
+// The shell's menu service, republished for the rows that call `open()` directly.
+export { menuService, setMenuService, triggerProps } from './state/menus'
+// The tree's type artwork: the Material Icon Theme lookup the artifact check
+// drives directly (it is pure, string-in/data-out) and the component the rows
+// render.
+export {
+  FALLBACK_FILE,
+  FALLBACK_FOLDER,
+  FALLBACK_FOLDER_OPEN,
+  iconArtwork,
+  iconIdForFile,
+  iconIdForFolder,
+  materialIconIds,
+  TREE_ICON_SIZE,
+  TreeIcon,
+} from './icons/material'
 // The pane arithmetic, for the same reason: a drag cannot be driven by the stub
 // render, and "the manuscript keeps its minimum width" is not a visual detail.
 export {
@@ -88,9 +126,37 @@ function label(ctx: ClientContext, key: keyof typeof zh): string {
  * @param ctx - the Client context; registrations are effects of it.
  */
 export function apply(ctx: ClientContext): void {
+  // The plugin's own translator, read per call so a locale switch follows without
+  // re-registering anything. It is what the menu (whose lifetime is this plugin's,
+  // not a panel's) uses for its labels.
+  const t = fallbackT
+
   for (const [locale, dict] of Object.entries(DICTS)) {
     ctx.effect(() => ctx.locale.register(NS, locale, dict), `notebook: locale ${locale}`)
   }
+
+  // The tree's right-click menu. Registered here rather than from the panel because a
+  // contribution's lifetime is the plugin's: opening the notebook, closing it and
+  // opening it again must not accumulate registrations (a duplicate id fails).
+  //
+  // **Waited for, not probed.** `ctx.inject` runs this once `contextMenus` exists;
+  // reading it with `ctx.get` at activation only worked while the plugin had been
+  // installed into a live shell. After a restart this bundle activates before
+  // `ui-context-menu` provides the service, `get` answered undefined, and the menu
+  // silently fell back to the browser's own. The service is published for the rows,
+  // which call `contextMenus.open()` directly (see `state/menus`).
+  ctx.inject(['contextMenus'], (child) => {
+    setMenuService(child.contextMenus)
+    // The service can go away again (the menu plugin is disabled or reloaded). The
+    // rows would then keep calling into a dead service, so the publication is undone
+    // with the rest of this child's effects.
+    child.effect(() => () => { setMenuService(undefined) }, 'notebook: context menu service')
+    child.effect(() => registerEntryMenu(child.contextMenus, t), 'notebook: context menu')
+    // The menu's glyphs, registered in the same lifetime as the contribution.
+    for (const [key, Icon] of Object.entries(MENU_ICONS)) {
+      child.slots.inject('contextMenu.icon', () => child.slots.register({ name: 'contextMenu.icon', key }, Icon))
+    }
+  })
 
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
     name: 'sidebar.panellist',
