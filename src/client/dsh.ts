@@ -162,12 +162,30 @@ export interface ClientContext {
   readonly locale: LocaleService
   effect(callback: () => (() => void) | void, label?: string): () => void
   /**
+   * Run a callback once the named services all exist.
+   *
+   * This is what makes an optional enhancement reliable: `ctx.get(name)` at
+   * activation time answers only whether the service was registered *by then*, and
+   * after a restart this plugin activates before `ui-context-menu` has provided its
+   * service — the panel then quietly kept the browser's own menu. `inject` waits
+   * instead: the callback runs when the last service appears, and work registered
+   * inside it (through `child.effect`) is disposed with it.
+   *
+   * The callback's receipts are additional properties on the child context, so the
+   * caller names them in the array and reads them by name.
+   * @param names - service names that must all be present.
+   * @param callback - runs when they are; its registrations follow their lifetime.
+   * @returns the disposer, which cancels the wait or the registration.
+   */
+  inject(names: readonly ['contextMenus'], callback: (child: ClientContext & {
+    readonly contextMenus: ContextMenusService
+  }) => void): () => void
+  /**
    * A Client service by name, when this shell provides it.
    *
-   * The optional form rather than a property access or an `inject` entry: this
-   * plugin must activate and draw its panel in a shell that has no Workspace
-   * domain, and only the control that needs the service should disappear with it.
-   * Resolved per call, so a service registered after this bundle still counts.
+   * Fine for a service this plugin can live without and whose absence is decided at
+   * activation (a shell that has no Workspace domain, say). For anything that may
+   * appear later, use {@link inject}.
    */
   get(name: 'uiWorkspace'): UiWorkspaceService | undefined
   get(name: 'layout'): LayoutService | undefined

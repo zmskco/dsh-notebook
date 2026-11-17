@@ -51,42 +51,46 @@ export interface MenuTriggerProps {
 /**
  * The gesture handlers that open this plugin's menu for one target.
  *
+ * The handlers are **always** returned, and the service is read when the gesture
+ * happens rather than when the row renders. That is not a micro-optimisation: the
+ * service is published from `ctx.inject`, whose callback runs whenever
+ * `ui-context-menu` gets there, which can be after the panel's first render. Deciding
+ * at render time would bind nothing on that first pass and never re-render.
+ *
+ * With no service yet, a gesture is left completely alone — no `preventDefault`, no
+ * `stopPropagation` — so the browser's own menu appears until the service arrives.
+ * Swallowing a right-click the plugin cannot answer would be worse than the default.
+ *
  * Mouse: the browser's menu is suppressed and the shared popup opens at the pointer.
- * Keyboard: `Shift+F10` and the dedicated Context Menu key are the two gestures a
- * keyboard has, and both open it at the row's bottom-left corner — the same anchor
- * the shell's own hook uses, so a keyboard user sees the menu where a mouse user
- * would have right-clicked.
+ * Keyboard: `Shift+F10` and the dedicated Context Menu key, anchored at the row's
+ * bottom-left corner — the same place a mouse user would have right-clicked.
  *
- * **`stop` is what makes the whole directory area targetable.** The column itself
- * takes the gesture for the workspace root, so right-clicking blank space below the
- * rows still offers "new file / new folder here"; a row's own handler then has to
- * stop the event, or the column's would run as well and replace the row's target
- * with the root (last opener wins). Without `stop` the row-level menu would never
- * be the one you see.
- *
- * With no service published the handlers are empty, which leaves the element's own
- * behaviour (the browser menu) in place rather than swallowing the gesture.
+ * **`stop` is what makes the whole directory area targetable.** The column takes the
+ * gesture for the workspace root, so right-clicking blank space still offers "new
+ * file / new folder here"; a row has to stop the event, or the column's handler would
+ * run as well and replace the row's target with the root.
  * @param target - the captured target; built per row.
  * @param options - `stop: true` for a nested trigger (a row inside the column).
- * @returns the handlers to spread onto the row, or `{}` without a menu.
+ * @returns the handlers to spread onto the row.
  */
 export function triggerProps(target: ContextMenuTarget, options: { stop?: boolean } = {}): MenuTriggerProps {
-  if (current === undefined) return {}
   return {
     onContextMenu: (event) => {
+      if (current === undefined) return
       event.preventDefault()
       // A row inside the column: the column's handler is the same gesture and would
       // otherwise open a second menu on the workspace root.
       if (options.stop === true) event.stopPropagation()
-      current?.open(target, { x: event.clientX, y: event.clientY })
+      current.open(target, { x: event.clientX, y: event.clientY })
     },
     onKeyDown: (event) => {
+      if (current === undefined) return
       const keyboard = event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')
       if (!keyboard) return
       event.preventDefault()
       const element = event.currentTarget as { getBoundingClientRect?: () => { left: number, bottom: number } } | null
       const box = element?.getBoundingClientRect?.()
-      current?.open(target, { x: box?.left ?? 0, y: box?.bottom ?? 0 })
+      current.open(target, { x: box?.left ?? 0, y: box?.bottom ?? 0 })
     },
   }
 }

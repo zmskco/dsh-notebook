@@ -78,6 +78,24 @@ check('exports declare inject as an array', Array.isArray(exports?.inject), `got
 check('inject lists slots and locale', exports?.inject?.includes('slots') === true && exports?.inject?.includes('locale') === true)
 
 // --- registration --------------------------------------------------------------
+/** The menu service the shell provides; recorded so the menu can be asserted. */
+const menuServiceStub = {
+  register: (contribution) => {
+    registrations.push({ kind: 'menu', contribution })
+    return () => {}
+  },
+  open: () => {},
+  notify: () => {},
+}
+/**
+ * The services a shell has provided *at the moment `apply` runs*.
+ *
+ * Deliberately empty for `contextMenus`: after a real restart this bundle activates
+ * before `ui-context-menu` provides its service, and `ctx.get` answered undefined —
+ * which is exactly why the menu fell back to the browser's own. The plugin must go
+ * through `ctx.inject`, so the stub models that ordering rather than hiding it.
+ */
+const availableAtActivation = new Map()
 const ctx = {
   locale: {
     register: (ns, lang, dict) => { registrations.push({ kind: 'locale', ns, lang, dict }); return () => {} },
@@ -93,21 +111,22 @@ const ctx = {
     children: {},
   },
   effect: (callback) => { callback(); return () => {} },
-  // The services the shell provides by name. `ui-context-menu` publishes
-  // `contextMenus`; the stub records the contribution so the menu can be asserted
-  // without a browser or the real registry.
-  get: (name) => {
-    if (name !== 'contextMenus') return undefined
-    return {
-      register: (contribution) => {
-        registrations.push({ kind: 'menu', contribution })
-        return () => {}
-      },
-      open: () => {},
-      notify: () => {},
+  // Mirrors the real contract: the callback runs only once every named service
+  // exists, and `child` carries them as properties.
+  inject: (names, callback) => {
+    if (menuInjected) return () => {}
+    const child = { ...ctx }
+    for (const name of names) {
+      if (name === 'contextMenus') child.contextMenus = menuServiceStub
+      else child[name] = availableAtActivation.get(name)
     }
+    menuInjected = true
+    callback(child)
+    return () => {}
   },
+  get: (name) => availableAtActivation.get(name),
 }
+let menuInjected = false
 try {
   exports.apply(ctx)
 } catch (error) {
@@ -468,6 +487,12 @@ check('the editor head holds the toolbar above the tabs',
 const menuEntry = registrations.find(entry => entry.kind === 'menu')
 check('the panel contributes to the shell\'s context menu',
   menuEntry?.contribution !== undefined, JSON.stringify(registrations.filter(e => e.kind === 'menu').length))
+// The service was **not** available when `apply` ran (see `availableAtActivation`), so
+// this only passes if the plugin waits for it with `ctx.inject` instead of probing
+// with `ctx.get`. That is the bug a restart exposed: the menu quietly disappeared.
+check('the menu is registered by waiting for the service, not by probing at activation',
+  availableAtActivation.has('contextMenus') === false && menuEntry !== undefined,
+  `available at activation: ${String(availableAtActivation.has('contextMenus'))}`)
 check('the contribution is a target family of its own',
   // Contributing to the shipped `file` / `directory` families would put the
   // notebook's "new folder right here" on files the user right-clicked elsewhere.
@@ -524,11 +549,13 @@ check('the menu labels are all in both dictionaries',
 // plugin published (`ctx.contextMenus.open()`), not from the `useContextMenu` prop —
 // that hook never reached this component and the rows kept showing the browser menu.
 const menuOpens = []
-exports.setMenuService({
+/** The service the rows talk to during the gesture checks; records every opening. */
+const recordingMenuService = {
   register: () => () => {},
   notify: () => {},
   open: (target, point) => { menuOpens.push({ target, point }) },
-})
+}
+exports.setMenuService(recordingMenuService)
 /** The panel as the shell renders it, for the gesture checks below. */
 const gestureColumn = (canChat) => NotebookTab({
   t: key => key,
@@ -617,12 +644,41 @@ check('an unrelated key is left alone',
     })
     return menuOpens.length === before
   })(), '')
-// Without the service the row must not swallow the gesture: a shell with no menu
-// plugin keeps the browser's own menu.
+// Without the service the row must still carry the handlers (they are bound at render
+// time, before `ctx.inject` may have run) but must leave the gesture completely alone,
+// so the browser's own menu appears instead of nothing.
 exports.setMenuService(undefined)
-let bareHandlers = 0
-walk(gestureColumn(false), (element) => { if (typeof element.props?.onContextMenu === 'function') bareHandlers += 1 })
-check('with no menu service the browser menu is left in place', bareHandlers === 0, String(bareHandlers))
+const bareRows = []
+walk(gestureColumn(false), (element) => {
+  if (typeof element.props?.onContextMenu === 'function') bareRows.push(element)
+})
+check('with no menu service the handlers exist but do not swallow the gesture',
+  (() => {
+    if (bareRows.length === 0) return false
+    let prevented = false
+    let stopped = false
+    bareRows[0].props.onContextMenu({
+      preventDefault: () => { prevented = true },
+      stopPropagation: () => { stopped = true },
+      clientX: 1, clientY: 2,
+    })
+    // No `preventDefault` means the browser's own menu still opens.
+    return !prevented && !stopped
+  })(), `${String(bareRows.length)} row(s) carried no handler`)
+// A gesture that arrives after the service shows up must work without a re-render:
+// this is the ordering a restart exposed.
+check('a gesture after the service arrives opens the menu without a re-render',
+  (() => {
+    exports.setMenuService(recordingMenuService)
+    const before = menuOpens.length
+    let prevented = false
+    bareRows[0].props.onContextMenu({
+      preventDefault: () => { prevented = true },
+      stopPropagation: () => {},
+      clientX: 3, clientY: 4,
+    })
+    return prevented && menuOpens.length === before + 1 && menuOpens.at(-1)?.point?.x === 3
+  })(), 'the handler kept its activation-time decision')
 
 // --- styles ------------------------------------------------------------------------
 const css = /const CSS = `([\s\S]*?)`;/.exec(source)?.[1] ?? ''

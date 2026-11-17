@@ -139,16 +139,24 @@ export function apply(ctx: ClientContext): void {
   // contribution's lifetime is the plugin's: opening the notebook, closing it and
   // opening it again must not accumulate registrations (a duplicate id fails).
   //
-  // The service is published rather than passed down as a prop. `useContextMenu()` —
-  // the documented hook — did not reach the panel's component (its rows kept showing
-  // the browser's menu), and `ctx.contextMenus.open()` is the other supported path, so
-  // the rows call that directly. `ctx.get` stays optional: a shell without the menu
-  // plugin still draws the panel, it just keeps the browser's own menu.
-  const menus = ctx.get('contextMenus')
-  if (menus !== undefined) {
-    setMenuService(menus)
-    ctx.effect(() => registerEntryMenu(menus, t), 'notebook: context menu')
-  }
+  // **Waited for, not probed.** `ctx.inject` runs this once `contextMenus` exists;
+  // reading it with `ctx.get` at activation only worked while the plugin had been
+  // installed into a live shell. After a restart this bundle activates before
+  // `ui-context-menu` provides the service, `get` answered undefined, and the menu
+  // silently fell back to the browser's own. The service is published for the rows,
+  // which call `contextMenus.open()` directly (see `state/menus`).
+  ctx.inject(['contextMenus'], (child) => {
+    setMenuService(child.contextMenus)
+    // The service can go away again (the menu plugin is disabled or reloaded). The
+    // rows would then keep calling into a dead service, so the publication is undone
+    // with the rest of this child's effects.
+    child.effect(() => () => { setMenuService(undefined) }, 'notebook: context menu service')
+    child.effect(() => registerEntryMenu(child.contextMenus, t), 'notebook: context menu')
+    // The menu's glyphs, registered in the same lifetime as the contribution.
+    for (const [key, Icon] of Object.entries(MENU_ICONS)) {
+      child.slots.inject('contextMenu.icon', () => child.slots.register({ name: 'contextMenu.icon', key }, Icon))
+    }
+  })
 
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
     name: 'sidebar.panellist',
@@ -157,13 +165,6 @@ export function apply(ctx: ClientContext): void {
     locale: NS,
     label: () => label(ctx, 'panel'),
   }, PanelIcon))
-
-  // The menu's glyphs. One entry per action key, each a 16px stroke drawing from
-  // `glyphs.tsx`, so the popup's icons match the panel's own toolbar instead of
-  // arriving with the shell's default placeholders.
-  for (const [key, Icon] of Object.entries(MENU_ICONS)) {
-    ctx.slots.inject('contextMenu.icon', () => ctx.slots.register({ name: 'contextMenu.icon', key }, Icon))
-  }
 
   // The studio page declares one child slot of its own, `scope: session-maybe`,
   // and renders it beside the manuscript. That declaration is what gives the
