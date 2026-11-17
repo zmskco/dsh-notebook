@@ -10,8 +10,7 @@
  * keeps the plugin inactive — rather than broken — in a profile that has no web
  * carrier.
  */
-import { defaultRootDir } from './story/bootstrap.js'
-import { resolveConfig } from './config.js'
+import { fallbackRootDir } from './story/bootstrap.js'
 import type { PluginContext } from './dsh.js'
 import { API_PATH, registerApi } from './http/api.js'
 import { createRootResolver } from './story/root.js'
@@ -30,22 +29,30 @@ export const inject = ['fs', 'webServer', 'connection']
 /**
  * Activate the plugin.
  * @param ctx - the owning context; every registration below is an effect of it.
- * @param rawConfig - the Loader row's `config`, unvalidated by design.
+ * @param rawConfig - the Loader row's `config`, which this plugin no longer has.
+ *   It is read only to warn about a row still carrying the retired `rootDir`:
+ *   silently ignoring it would leave a profile that looks pinned to a directory
+ *   the panel is not showing.
  */
-export function apply(ctx: PluginContext, rawConfig: unknown): void {
+export function apply(ctx: PluginContext, rawConfig?: unknown): void {
   const log = ctx.logger
   const policy = ctx.get('sandboxPolicy')
-  const config = resolveConfig(
-    rawConfig,
-    defaultRootDir(policy),
-    (message) => { log.warn(`notebook: ${message}`) },
-    policy?.workspaceRoot,
-  )
+  const configured: Record<string, unknown> = typeof rawConfig === 'object' && rawConfig !== null
+    ? rawConfig as Record<string, unknown>
+    : {}
+  if (configured.rootDir !== undefined) {
+    log.warn('notebook: rootDir is no longer a configuration field; the tree follows the workspace. '
+      + 'To keep a notebook somewhere else, open that directory as the workspace.')
+  }
+  for (const field of Object.keys(configured)) {
+    if (field !== 'rootDir') log.warn(`notebook: unknown configuration field ${field}; this plugin takes none`)
+  }
+  const fallbackRoot = fallbackRootDir(policy)
   // The root is resolved per call rather than here: it follows the workspace of
   // the Session making the call, so one plugin instance serves every workspace in
   // the profile instead of pinning one mutable root. See `root.ts` for the rule
   // and the per-root write policy it stamps.
-  const roots = createRootResolver({ fs: ctx.fs, config, policy, agents: ctx.get('agents'), log })
+  const roots = createRootResolver({ fs: ctx.fs, fallbackRoot, policy, agents: ctx.get('agents'), log })
   const initialRoot = roots().root
   const access = assessWriteAccess(initialRoot.dir, policy)
   // Puts the Session into the directory the panel shows, so the model's relative
@@ -61,7 +68,7 @@ export function apply(ctx: PluginContext, rawConfig: unknown): void {
     // A session-less activation. The panel and every call resolve their own root
     // from the Session that made the call, so this fallback is what a scripted
     // caller with no Session would see.
-    log.info(`notebook: no pinned root and no Session at activation; fallback root is ${initialRoot.dir}`)
+    log.info(`notebook: no Session at activation; fallback root is ${initialRoot.dir}`)
   }
   if (policy === undefined) {
     log.info('notebook: no sandbox-policy service in this profile; writes are unconfined')
@@ -70,7 +77,6 @@ export function apply(ctx: PluginContext, rawConfig: unknown): void {
     // deployment value: each write stamps `{ mode, workspaceRoot: <that root> }`
     // (see `sandbox.ts`). The mode, though, is the Session's own.
     log.info(`notebook: writes allowed (mode=${String(access.mode)}, boundary=each call's root)`)
-    if (access.reason === 'outside-workspace') log.warn(`notebook: ${String(writeAccessGuidance(initialRoot.dir, access))}`)
   } else {
     // Worth a warning rather than an error: the plugin still mounts and still
     // reads, and the panel shows the same guidance with the exact YAML to paste.

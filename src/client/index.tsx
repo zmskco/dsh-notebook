@@ -23,7 +23,7 @@ import type { ClientContext } from './dsh'
 // and the editor model are all pure where it matters, so the bundle check calls
 // them directly instead of reaching them through a render it cannot drive: the
 // fake React renders one branch, and these live behind a click or behind `state`.
-export { ancestorsOf, breadcrumb, buildTree, childDirectories, childFiles, countFiles, formatBytes, isDirectoryPath, parentOf, pathSegments, PROJECT_ROOT } from './state/file-tree'
+export { ancestorsOf, breadcrumb, buildTree, childDirectories, childFiles, countFiles, formatBytes, isDirectoryPath, parentOf, pathSegments, PROJECT_ROOT, rowIndent, TREE_INDENT, TREE_INDENT_BASE, TREE_INDENT_MAX } from './state/file-tree'
 export { AUTOSAVE_MS, NotebookTab } from './studio/NotebookTab'
 // The markdown reader, which decides what the text is (and what may never become
 // a link or markup), plus the mode helpers the source/rendered toggle is built from.
@@ -92,6 +92,7 @@ export {
   readLayout,
   resizePane,
   saveLayout,
+  SIDE_MIN,
   toggleTalking,
 } from './state/layout'
 

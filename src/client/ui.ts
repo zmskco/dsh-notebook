@@ -57,8 +57,14 @@ body.dsh-notebook-grabbing{user-select:none;cursor:col-resize}
 .dsh-notebook-section{display:flex;align-items:center;flex:none;height:44px;box-sizing:border-box;padding:0 10px 0 16px;border-bottom:1px solid var(--dsw-alias-border-l1)}
 .dsh-notebook-section .dsh-notebook-row{flex:1;min-width:0;gap:2px}
 /* The heading is the panel's name: small caps carry it, not size or colour — the
-   column below is what the eye is for. */
-.dsh-notebook-sectionTitle{font-size:12px;font-weight:600;color:var(--dsw-alias-label-secondary);letter-spacing:.02em;margin:0}
+   column below is what the eye is for. It gives way before the six controls do, and
+   it does so by truncating rather than by wrapping: the band is a fixed 44px, so a
+   wrapped name would be clipped instead of shown. The column's own floor (SIDE_MIN)
+   is set high enough that this never actually bites. */
+.dsh-notebook-sectionTitle{font-size:12px;font-weight:600;color:var(--dsw-alias-label-secondary);letter-spacing:.02em;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* A heading icon is the glyph and 4px of padding — 24px square, six of them plus
+   the name fitting the column's own minimum. */
+.dsh-notebook-section button.dsh-notebook-btn[data-variant="icon"]{flex:none}
 .dsh-notebook-row{display:flex;align-items:center;gap:8px}
 .dsh-notebook-rowWrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .dsh-notebook-col{display:flex;flex-direction:column;gap:6px}
@@ -104,7 +110,18 @@ button.dsh-notebook-btn[data-variant="danger"]:hover:not(:disabled){border-color
    position differs, so they share one declaration. */
 .dsh-notebook-label,.dsh-notebook-hint{font-size:11.5px;color:var(--dsw-alias-label-secondary)}
 .dsh-notebook-list{list-style:none;margin:0;padding:6px}
-.dsh-notebook-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:5px 8px;border-radius:6px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;cursor:pointer}
+/* The list scrolls **vertically only**, and that is a correctness rule rather than
+   a look. Depth is drawn as left padding on the row (see rowIndent in
+   state/file-tree), and the row is width:100% of its <li>: with content-box sizing
+   each extra level made the row that much *wider* than the list, so the list became
+   horizontally scrollable. An inline row (new file, new folder, rename) is
+   autofocused, and focusing an element wider than its scroller makes the browser
+   scroll it into view — which slid the tree left by the depth of the row and pushed
+   its icon out under the column's edge. border-box keeps the indent inside the
+   row's own width, and clip on the x axis means there is no horizontal scroll
+   position for focus to move, whatever a future row does. */
+.dsh-notebook-list.dsh-notebook-scroll{overflow-x:clip}
+.dsh-notebook-item{box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:5px 8px;border-radius:6px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .dsh-notebook-item:hover{background:var(--dsw-alias-bg-layer-2)}
 .dsh-notebook-item[data-active="true"]{background:var(--dsw-alias-bg-layer-2);border-color:var(--dsw-alias-border-l1);font-weight:600;box-shadow:inset 2px 0 0 var(--dsw-alias-brand-primary)}
 /* A folder that new files will land in. Quieter than the open file on purpose:
@@ -189,10 +206,17 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 /* The toolbar is exactly the directory heading's height, on purpose: the two
    columns' rules then land on one unbroken line across the panel (the grips fill
    their own 6px of that line). A fixed height — not a minimum — is what keeps that
-   promise when the column is narrow: the row does not wrap and grow, it scrolls
-   sideways, exactly like the tab strip below it. */
-.dsh-notebook-toolbar{display:flex;align-items:center;flex:none;box-sizing:border-box;height:44px;padding:0 12px;border-bottom:1px solid var(--dsw-alias-border-l1);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
-.dsh-notebook-toolbar::-webkit-scrollbar{height:0}
+   promise when the column is narrow: the pickers scroll sideways inside it instead
+   of wrapping onto a second line that the band would clip.
+   The row itself does not scroll: the conversation switch is pinned to its right
+   edge and must stay visible however narrow the column gets. */
+.dsh-notebook-toolbar{display:flex;align-items:center;flex:none;box-sizing:border-box;height:44px;padding:0 12px;gap:10px;border-bottom:1px solid var(--dsw-alias-border-l1);overflow:hidden}
+/* The pickers take whatever width is left and scroll inside it; the switch beside
+   them keeps its own. Without this split the switch would be the item that scrolls
+   out of view — the one control on the band that is not about the document. */
+.dsh-notebook-toolbar > .dsh-notebook-typebar{flex:1 1 auto;min-width:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding:2px 0}
+.dsh-notebook-toolbar > .dsh-notebook-typebar::-webkit-scrollbar{height:0}
+.dsh-notebook-toolbar > button.dsh-notebook-btn{flex:none}
 .dsh-notebook-mainError{padding:8px 14px 0;flex:none}
 /* The tab band.
    It is the only tinted strip in the panel, and that tint is the whole trick: the

@@ -19,7 +19,7 @@ import { assertPathName, assertRelativePath } from '../story/paths.js'
 import { assessWriteAccess, writeAccessGuidance } from '../story/sandbox.js'
 import type { WriteAccess } from '../story/sandbox.js'
 import { WORKSPACE_PROJECT, type OpenRoot, type ProjectStore } from '../story/project.js'
-import { workspaceDirFor, workspaceStore } from '../story/workspace.js'
+import { workspaceStore } from '../story/workspace.js'
 import { revealCommand, revealInFileManager } from './reveal.js'
 import { workspaceReadme } from '../story/readme.js'
 import { STATUS_BY_CODE } from './status.js'
@@ -113,8 +113,9 @@ export function registerApi(deps: ApiDeps): () => Promise<void> {
     // may send none, and then the activation fallback applies.
     const sessionId = url.searchParams.get('session') ?? undefined
     const { root, session } = roots(sessionId)
-    // The panel's directory column is rooted at the workspace itself.
-    const workspaceDir = workspaceDirFor(session, root.dir)
+    // The panel's directory column is rooted at the workspace itself, and that
+    // workspace *is* the root: one directory, resolved once for this request.
+    const workspaceDir = root.dir
     const workspace = workspaceStore({ fs, policy, log }, session, workspaceDir)
     const open = async (name: unknown): Promise<{ store: ProjectStore; project: OpenRoot }> => {
       if (name === WORKSPACE_PROJECT) return { store: workspace, project: await workspace.openRoot() }
@@ -126,7 +127,6 @@ export function registerApi(deps: ApiDeps): () => Promise<void> {
         case 'state': {
           return json({
             rootDir: workspaceDir,
-            rootSource: root.source,
             sandbox: {
               mode: access.mode ?? null,
               workspaceRoot: access.workspaceRoot ?? null,

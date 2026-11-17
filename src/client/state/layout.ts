@@ -24,14 +24,21 @@ export interface PaneLayout {
    *
    * A *toggle*, not a region model: the column is always mounted (it is what
    * binds the Session for every request the page makes), and this only decides
-   * whether it is painted. The switch for it is the icon beside the directory
-   * column's heading.
+   * whether it is painted. The switch for it is the last icon of the editor's
+   * toolbar — the right-hand end of the band that runs across the panel.
    */
   talking: boolean
 }
 
-/** Directory column bounds. */
-export const SIDE_MIN = 200
+/**
+ * Directory column bounds.
+ *
+ * The floor is measured from the heading rather than picked: six 24px icon buttons
+ * and the column's own name, with 2px between them and 26px of padding, come to
+ * about 220px. Below that the name would have to truncate to make room for the
+ * controls, so the column simply does not go there.
+ */
+export const SIDE_MIN = 240
 export const SIDE_MAX = 520
 /** Conversation column bounds. */
 export const CHAT_MIN = 280
@@ -45,7 +52,7 @@ export const CHAT_MAX = 900
  */
 export const PROSE_MIN = 360
 
-/** Opening widths. 300 keeps the three create buttons on one line. */
+/** Opening widths. 300 clears the heading's six icons and its name with room to spare. */
 export const DEFAULT_LAYOUT: PaneLayout = { side: 300, chat: 400, talking: true }
 
 /** Storage key, namespaced like the remembered story so it cannot collide. */

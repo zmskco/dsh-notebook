@@ -169,14 +169,13 @@ export function NotebookPage(props: NotebookPageProps): React.ReactElement {
   const sandbox = state?.sandbox
   // Warn before the first save rather than after it. The guidance arrives from
   // the Host already spelled out with absolute paths and a paste-ready patch
-  // block, so the page only has to place it — and it distinguishes the two
-  // arrangements by whether this plugin itself can write: a read-only deployment
-  // refuses everything, while a library pinned outside the open workspace is
-  // writable here and refused for the model's own tools.
+  // block, so the page only has to place it. There is exactly one arrangement
+  // left to warn about — a read-only deployment, where the panel and the model's
+  // own tools are refused by the same boundary — because the tree is rooted at
+  // the workspace itself and nothing can put it outside.
   const sandboxWarning = sandbox !== undefined && sandbox.guidance !== null
     ? React.createElement('div', { className: 'dsh-notebook-warn' },
-      React.createElement('div', { className: 'dsh-notebook-warnTitle' },
-        sandbox.writable ? t('outsideWorkspaceTitle') : t('unwritableTitle')),
+      React.createElement('div', { className: 'dsh-notebook-warnTitle' }, t('unwritableTitle')),
       React.createElement('pre', { className: 'dsh-notebook-warnBody' }, sandbox.guidance),
     )
     : null

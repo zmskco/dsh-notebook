@@ -1,12 +1,13 @@
 /**
  * Write-boundary checks.
  *
- * Three things are covered, and they are the three that made a working install
- * look broken: the plugin must derive its write boundary from the story root of
- * each call — so the shelf is writable with no profile edit — the *mode* must be
- * the one the calling Session is actually running under, and a shelf pinned
- * outside the open workspace must be reported as the half-working arrangement it
- * is rather than as a healthy one.
+ * Two things are covered, and they are the two that made a working install look
+ * broken: the plugin must derive its write boundary from the workspace of each
+ * call — so a fresh install is writable with no profile edit — and the *mode*
+ * must be the one the calling Session is actually running under.
+ *
+ * The retired `rootDir` is covered too, as a negative: a profile that still
+ * carries it must be told it does nothing, rather than silently believed.
  *
  * The write itself happens through `ctx.fs`, which is stubbed in the Host smoke
  * test, so the decision logic and the policy it stamps are exercised directly
@@ -14,7 +15,8 @@
  */
 import { join, resolve, sep } from 'node:path'
 import { assessWriteAccess, profilePatchPath, storyWritePolicy, writeAccessGuidance } from '../lib/story/sandbox.js'
-import { resolveConfig } from '../lib/config.js'
+import { fallbackRootDir } from '../lib/story/bootstrap.js'
+import { storyRootFor } from '../lib/story/root.js'
 
 let failures = 0
 function check(label, ok, detail) {
@@ -29,11 +31,10 @@ function check(label, ok, detail) {
 const win = process.platform === 'win32'
 /** The deployment boundary: where dsh was launched, and what `sandbox-policy` names. */
 const boundary = win ? 'D:\\Learn\\dshplugin' : '/work/dshplugin'
-/** A story library somewhere else entirely — the case that used to be unwritable. */
-const storyRoot = win ? 'D:\\Learn\\zmsk' : '/work/zmsk'
-/** One Session's workspace, and the shelf the plugin derives from it. */
-const workspace = win ? 'D:\\Learn\\dshplugin' : '/work/dshplugin'
-const sessionShelf = join(workspace, 'novels')
+/** One Session's workspace — the only root there is. */
+const workspace = win ? 'D:\\Learn\\zmsk' : '/work/zmsk'
+/** A second workspace, to prove the root follows the caller rather than a pin. */
+const other = win ? 'D:\\Learn\\other' : '/work/other'
 
 /**
  * A `sandboxPolicy` as the real service behaves.
@@ -63,87 +64,65 @@ const confined = policy('workspace-write', boundary)
 
 console.log('\nwrite access');
 
-check('no sandbox service means writes are unconfined', assessWriteAccess(storyRoot, undefined).writable)
-check('no sandbox service means no policy is stamped', storyWritePolicy(storyRoot, undefined) === undefined)
-check('a story root outside the deployment boundary is writable',
-  assessWriteAccess(storyRoot, confined).writable,
-  'the plugin stamps the story root as the boundary of its own writes')
+check('no sandbox service means writes are unconfined', assessWriteAccess(workspace, undefined).writable)
+check('no sandbox service means no policy is stamped', storyWritePolicy(workspace, undefined) === undefined)
+check('a workspace outside the deployment boundary is writable',
+  assessWriteAccess(workspace, confined).writable,
+  'the plugin stamps the workspace as the boundary of its own writes')
 check('the report names the mode the deployment runs',
-  assessWriteAccess(storyRoot, confined).mode === 'workspace-write')
-check('the report names the story root, not the deployment boundary',
-  assessWriteAccess(storyRoot, confined).workspaceRoot === storyRoot)
-check('danger-full-access allows any story root',
-  assessWriteAccess(storyRoot, policy('danger-full-access', boundary)).writable)
-check('a session-less read of a writable root has no remedy to show',
-  writeAccessGuidance(storyRoot, assessWriteAccess(storyRoot, confined)) === null)
+  assessWriteAccess(workspace, confined).mode === 'workspace-write')
+check('the report names the workspace, not the deployment boundary',
+  assessWriteAccess(workspace, confined).workspaceRoot === workspace)
+check('danger-full-access allows any workspace',
+  assessWriteAccess(workspace, policy('danger-full-access', boundary)).writable)
+check('a writable workspace has no remedy to show',
+  writeAccessGuidance(workspace, assessWriteAccess(workspace, confined)) === null)
+check('a writable workspace reports no reason code',
+  assessWriteAccess(workspace, confined).reason === undefined)
 
-const readOnly = assessWriteAccess(storyRoot, policy('read-only', boundary))
-check('read-only denies every story root', !readOnly.writable)
+const readOnly = assessWriteAccess(workspace, policy('read-only', boundary))
+check('read-only denies every workspace', !readOnly.writable)
 check('read-only names its reason', readOnly.reason === 'read-only', readOnly.reason)
 check('a refused root still reports the boundary it was checked against',
-  readOnly.workspaceRoot === storyRoot && readOnly.mode === 'read-only')
+  readOnly.workspaceRoot === workspace && readOnly.mode === 'read-only')
 
 console.log('\nthe mode follows the Session, not the deployment');
 
 const switched = policy('read-only', boundary, { [workspace]: 'danger-full-access' })
 check('a session switched to danger-full-access is not judged read-only',
-  assessWriteAccess(sessionShelf, switched, session(workspace)).writable,
+  assessWriteAccess(workspace, switched, session(workspace)).writable,
   'the panel must not disagree with the tools the operator is actually running')
 check('and its writes carry that mode',
-  storyWritePolicy(sessionShelf, switched, session(workspace))?.mode === 'danger-full-access')
+  storyWritePolicy(workspace, switched, session(workspace))?.mode === 'danger-full-access')
+check('a session with no override keeps its own mode',
+  assessWriteAccess(workspace, confined, session(workspace)).mode === 'workspace-write')
 const downgraded = policy('danger-full-access', boundary, { [workspace]: 'read-only' })
 check('a session pinned to read-only is refused even under a permissive deployment',
-  assessWriteAccess(sessionShelf, downgraded, session(workspace)).reason === 'read-only')
+  assessWriteAccess(workspace, downgraded, session(workspace)).reason === 'read-only')
 check('a session-less call keeps the deployment default',
-  storyWritePolicy(sessionShelf, switched)?.mode === 'read-only')
-
-console.log('\na shelf outside the open workspace');
-
-const outside = policy('workspace-write', boundary, { [workspace]: 'workspace-write' })
-const pinned = assessWriteAccess(storyRoot, outside, session(workspace))
-check('the plugin itself can still write there', pinned.writable)
-check('but the assessment says why that is not the whole story',
-  pinned.reason === 'outside-workspace', String(pinned.reason))
-check('and names the workspace it was compared against',
-  pinned.sessionWorkspace === workspace, String(pinned.sessionWorkspace))
-const shelfInside = assessWriteAccess(sessionShelf, outside, session(workspace))
-check('a shelf inside the workspace is the ordinary case, with nothing to say',
-  shelfInside.writable && shelfInside.reason === undefined
-  && writeAccessGuidance(sessionShelf, shelfInside) === null,
-  JSON.stringify(shelfInside))
-check('a sibling directory is not inside the workspace',
-  assessWriteAccess(join(workspace, '..', 'elsewhere'), outside, session(workspace)).reason === 'outside-workspace')
+  storyWritePolicy(workspace, switched)?.mode === 'read-only')
 
 console.log('\nthe policy each write carries');
 
-const stamped = storyWritePolicy(storyRoot, confined)
-check('the story root becomes the boundary of the write',
-  stamped !== undefined && stamped.workspaceRoot === storyRoot, JSON.stringify(stamped))
+const stamped = storyWritePolicy(workspace, confined)
+check('the workspace becomes the boundary of the write',
+  stamped !== undefined && stamped.workspaceRoot === workspace, JSON.stringify(stamped))
 check('the deployment mode is kept verbatim',
   stamped !== undefined && stamped.mode === 'workspace-write', JSON.stringify(stamped))
 check('a read-only deployment is not widened by the plugin',
-  storyWritePolicy(storyRoot, policy('read-only', boundary))?.mode === 'read-only')
+  storyWritePolicy(workspace, policy('read-only', boundary))?.mode === 'read-only')
 check('danger-full-access is not narrowed to a boundary it never had',
-  storyWritePolicy(storyRoot, policy('danger-full-access', boundary))?.workspaceRoot === storyRoot)
+  storyWritePolicy(workspace, policy('danger-full-access', boundary))?.workspaceRoot === workspace)
 
 console.log('\nguidance');
 
-const text = writeAccessGuidance(storyRoot, readOnly)
+const text = writeAccessGuidance(workspace, readOnly)
 check('guidance names the root it refused', text.includes('zmsk'), text)
 check('guidance names the mode that refused it', text.includes('read-only'))
 check('guidance restates mode, because config is replaced wholesale',
   text.includes('mode:') && text.includes('workspaceRoot:'),
   'an entry setting only one of the two would reset the other')
 check('guidance is spelled out over several lines', text.split('\n').length > 5)
-
-const outsideText = writeAccessGuidance(storyRoot, pinned)
-check('the outside-workspace remedy names both directories',
-  outsideText.includes('zmsk') && outsideText.includes(workspace), outsideText)
-check('it says what still works, so the warning is actionable',
-  outsideText.includes('面板照常读写'), outsideText)
-check('it says which writers are refused', outsideText.includes('write/edit'))
-check('it offers the workspace itself as the way back',
-  outsideText.includes(workspace), outsideText)
 
 const previousHome = process.env.DSH_HOME
 const previousProfile = process.env.DSH_PROFILE
@@ -155,21 +134,28 @@ check('the guidance points at the profile patch file the user actually edits',
 process.env.DSH_HOME = previousHome
 process.env.DSH_PROFILE = previousProfile
 
-console.log('\nroot resolution');
+console.log('\nroot resolution: the workspace is the root');
 
-const warn = () => {}
-const fallback = join(boundary, 'novels')
-const unset = resolveConfig({}, fallback, warn, boundary)
-check('an unset rootDir takes the sandbox-aware fallback', unset.rootDir === fallback)
-check('an unset rootDir is not an override, so the workspace decides', unset.rootDirOverride === false)
-const relative = resolveConfig({ rootDir: 'novels' }, fallback, warn, boundary)
-check('a relative rootDir resolves against the sandbox boundary', relative.rootDir === join(boundary, 'novels'), relative.rootDir)
-check('a configured rootDir is an override', relative.rootDirOverride === true)
-check('an absolute rootDir is honoured verbatim',
-  resolveConfig({ rootDir: storyRoot }, fallback, warn, boundary).rootDir === storyRoot)
-const noBoundary = resolveConfig({ rootDir: 'novels' }, fallback, warn, undefined).rootDir
-check('a relative rootDir without a boundary still becomes absolute',
-  noBoundary === resolve('novels') && noBoundary.includes(`${sep}novels`), noBoundary)
+const fallback = join(boundary, 'notebook')
+check('a live Session is the root, with no configuration in the way',
+  storyRootFor(fallback, workspace).dir === workspace
+  && storyRootFor(fallback, workspace).source === 'workspace')
+check('a different Session gets a different root',
+  storyRootFor(fallback, other).dir === other)
+check('a session-less call takes the fallback, and says so',
+  storyRootFor(fallback, undefined).dir === fallback
+  && storyRootFor(fallback, undefined).source === 'fallback')
+check('an empty cwd is treated as no Session at all',
+  storyRootFor(fallback, '').source === 'fallback')
+check('the fallback is the deployment boundary, not a shelf this plugin invented',
+  fallbackRootDir({ workspaceRoot: boundary }) === boundary)
+const homed = fallbackRootDir(undefined)
+check('without a boundary the fallback is an absolute directory under DSH_HOME',
+  resolve(homed) === homed && homed.includes(`${sep}notebook`), homed)
+check('no rule can report a pinned root any more',
+  storyRootFor(fallback, workspace).source !== 'override'
+  && storyRootFor(fallback, undefined).source !== 'override',
+  'the retired rootDir must not survive in the resolver')
 
 console.log(failures === 0
   ? '\nwrite boundary verified\n'

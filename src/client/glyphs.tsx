@@ -96,8 +96,8 @@ export interface PlusIconProps {
  * The two create actions in the directory column's heading: Lucide's
  * `folder-plus` and `file-plus`.
  *
- * They sit at the right end of the heading, immediately before the conversation
- * switch, so everything that changes what is on screen is in one place.
+ * They open the heading's row of six, at the right end: creates first, then the
+ * two edits that need a target, then the workspace pair (refresh, reveal).
  */
 export function FolderPlusIcon({ size = GLYPH_SIZE }: PlusIconProps): React.ReactElement {
   return React.createElement(Glyph, { size },
@@ -154,7 +154,9 @@ export interface ChatIconProps {
  * The conversation column's toggle: Lucide's `message-square`.
  *
  * A conversation, not a pane: the glyph is what the column holds, which is why it
- * is the same picture a chat bubble would use everywhere else.
+ * is the same picture a chat bubble would use everywhere else. It is the last
+ * thing on the editor's toolbar — the right edge of the band across the panel,
+ * which is where a control that changes what the whole panel shows belongs.
  */
 export function ChatIcon({ size = GLYPH_SIZE }: ChatIconProps): React.ReactElement {
   return React.createElement(Glyph, { size },
@@ -162,12 +164,15 @@ export function ChatIcon({ size = GLYPH_SIZE }: ChatIconProps): React.ReactEleme
 }
 
 /**
- * The two glyphs the right-click menu adds: Lucide's `pencil` and `trash-2`.
+ * The two glyphs the right-click menu adds, and the two the heading now carries
+ * too: Lucide's `pencil` and `trash-2`.
  *
- * They are the same stroke family as the toolbar, which is why the popup's icons
- * line up with the panel's own rather than looking like a second icon set. The
- * popup renders them at its own size; the drawing scales because the whole 24-grid
- * does (see the module comment).
+ * The same drawing serves both places on purpose — the heading's icons and the
+ * menu's items are the same two operations on the same entry, so two pictures for
+ * them would be two things to learn. They are the same stroke family as the
+ * toolbar, which is why the popup's icons line up with the panel's own rather than
+ * looking like a second icon set. The popup renders them at its own size; the
+ * drawing scales because the whole 24-grid does (see the module comment).
  */
 export function RenameIcon({ size = GLYPH_SIZE }: PlusIconProps): React.ReactElement {
   return React.createElement(Glyph, { size },

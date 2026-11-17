@@ -3,10 +3,12 @@
  * on the right of it.
  *
  * The directory column is the workspace's file browser, headed by the controls
- * that act on it — new folder, new file, refresh, and "open in the file manager".
- * They live here because this is the column they act on.
+ * that act on it — new folder, new file, rename, delete, refresh, and "open in
+ * the file manager". They live here because this is the column they act on.
  *
- * The notebook column reads or edits any text file and saves it.
+ * The notebook column reads or edits any text file and saves it. Its header ends
+ * with the conversation switch: the last thing on the right of the band that runs
+ * across the panel, which is where "what the panel shows" belongs.
  *
  * The sidebar browses the *workspace*, not one folder: notes, outlines and
  * READMEs live in whatever structure the author grows, so a chapter-only list
@@ -32,6 +34,7 @@ import {
   isDirectoryPath,
   parentOf,
   PROJECT_ROOT,
+  rowIndent,
 } from '../state/file-tree'
 import type { TreeNode } from '../state/file-tree'
 import { editorControls, isMarkdownPath, nextEditorMode } from '../state/markdown'
@@ -61,7 +64,7 @@ import {
   SIZE_STEPS,
 } from '../state/editor-prefs'
 import type { EditorPrefs, FontId, PaperId } from '../state/editor-prefs'
-import { ChatIcon, DeleteIcon, FilePlusIcon, FolderPlusIcon, RefreshIcon, RevealIcon } from '../glyphs'
+import { ChatIcon, DeleteIcon, FilePlusIcon, FolderPlusIcon, RefreshIcon, RenameIcon, RevealIcon } from '../glyphs'
 import { TreeIcon } from '../icons/material'
 import type { ProjectFileEntry } from '../../host/types'
 import type { StringKey, T } from '../strings'
@@ -205,6 +208,25 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
    */
   const [confirming, setConfirming] = useState<{ path: string, name: string, directory: boolean, files: number | null } | undefined>(undefined)
   /**
+   * The entry the heading's rename and delete act on: the row last taken hold of.
+   *
+   * The tree has no separate "selected" mark, and deliberately so — it already
+   * distinguishes the file being drawn from the folder new files land in, and a
+   * third highlight would leave three rows all claiming to be the current one. So
+   * the heading's two edit actions follow the **last gesture**: clicking a file
+   * (which also opens it), opening or closing a folder, bringing a tab forward, or
+   * creating something. Each of those is exactly "this is what I am working on".
+   *
+   * Nothing is left to guess: both buttons name their target in the tooltip
+   * (`重命名「第一章」`), and they are disabled while the path is not in the tree —
+   * nothing has been touched yet, or the entry was removed from outside the panel.
+   * The workspace root is never a candidate: it is not one of its own rows, which
+   * is the same reason the context menu cannot rename or delete it.
+   */
+  const [cursor, setCursor] = useState<string | undefined>(undefined)
+  /** The entry that cursor names, or undefined when there is nothing to act on. */
+  const cursorEntry = cursor === undefined ? undefined : files.find(entry => entry.path === cursor)
+  /**
    * The unsaved text a save already refused, per path.
    *
    * Without it a refusal — a read-only deployment, a folder outside the workspace
@@ -270,6 +292,9 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
       return next
     })
     setTargetDir(open ? parentOf(path) : path)
+    // Opening or closing a folder is taking hold of it, so the heading's edit
+    // actions follow it (see `cursor`).
+    setCursor(path)
   }, [expanded])
 
   /** Open every directory a path needs in order to be visible. */
@@ -525,6 +550,9 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
     // property of where the author is working, and re-selecting the open file is
     // exactly how they come back to it after aiming somewhere else.
     setTargetDir(parentOf(path))
+    // The drawn file is also the entry the heading's edit actions name, whether it
+    // was opened from the tree, brought forward from the strip, or just created.
+    setCursor(path)
     const leaving = active === undefined ? undefined : findFile(openRef.current, active)
     if (leaving !== undefined && leaving.dirty && leaving.path !== path) void save(leaving.path)
     if (findFile(openRef.current, path) === undefined) {
@@ -565,6 +593,9 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
         // "new folder" take seconds. The listing follows in the background.
         setFiles(current => [...current, { path: made.path, name, bytes: 0, kind: 'directory' }])
         setTargetDir(made.path)
+        // The folder just made is what the author is working in, so the heading's
+        // edit actions follow it — renaming it is the very next thing one does.
+        setCursor(made.path)
         reveal(made.path, true)
         void loadFiles()
       } else {
@@ -692,6 +723,9 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
       setOpen(list => list.map(file => rekeyFile(file, renaming.path, renamed.path)))
       setActive(previous => previous === renaming.path ? renamed.path : previous)
       if (targetDir === renaming.path) setTargetDir(renamed.path)
+      // The heading's edit actions follow the entry through its rename, the same
+      // way the tab does; a cursor left on the old path would disable both buttons.
+      setCursor(previous => previous === renaming.path ? renamed.path : previous)
       setRenaming(undefined)
       void loadFiles()
     } catch (cause: unknown) {
@@ -753,6 +787,9 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
       setFiles(list => list.filter(entry => !gone(entry.path)))
       if (gone(targetDir)) setTargetDir(PROJECT_ROOT)
       if (renaming !== undefined && gone(renaming.path)) setRenaming(undefined)
+      // Whatever the heading's edit actions were aimed at is gone with it; they fall
+      // back to disabled rather than to some neighbouring entry nobody named.
+      setCursor(previous => previous !== undefined && gone(previous) ? undefined : previous)
       setConfirming(undefined)
       void loadFiles()
     } catch (cause: unknown) {
@@ -798,7 +835,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   const ghostRow = (depth: number, kind: 'file' | 'dir'): React.ReactElement => {
     const label = kind === 'dir' ? t('dirName') : t('fileName')
     return React.createElement('li', { key: `ghost:${kind}` },
-      React.createElement('div', { className: 'dsh-notebook-item dsh-notebook-ghost', style: { paddingLeft: 8 + depth * 14 } },
+      React.createElement('div', { className: 'dsh-notebook-item dsh-notebook-ghost', style: { paddingLeft: rowIndent(depth) } },
         // The row carries the drawing the finished row will have, worked out from
         // the name being typed — so `笔记.md` becomes a markdown mark as it is
         // entered. An empty name is not a file name: `TreeIcon` draws the generic
@@ -838,8 +875,11 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   const rows: React.ReactNode[] = []
   const pushRows = (nodes: TreeNode[], depth: number): void => {
     for (const node of nodes) {
-      // 8px of padding plus 14px per level: the indent *is* the tree.
-      const indent = 8 + depth * 14
+      // How deep this row is drawn. One helper for every row — the plain one, the
+      // row a rename edits, and the empty row a new name is typed into — because a
+      // level only one of them applied was a row that jumped sideways when the
+      // author started typing. See `rowIndent` for the cap and why it exists.
+      const indent = rowIndent(depth)
       // The row a rename is being typed into: the name becomes a field in place, so
       // the gesture keeps the row it is about under the eye instead of opening a
       // dialog somewhere else on the page.
@@ -939,11 +979,20 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   /**
    * The column's heading: the name on the left, the actions on the right.
    *
-   * The creates are icons rather than a row of buttons under the heading: the tree
-   * below is what they act on, so an icon pair at the top edge costs one line
-   * instead of one row. Both sit at the far right, immediately before the
-   * conversation switch — the heading's right-hand end is where the things that
-   * change what is on screen belong, and the switch is the last of them.
+   * Six icons in two groups, in the order the tree reads: the two creates, then the
+   * two that act on the entry last taken hold of (`cursor`), then the two that act
+   * on the workspace as a whole — re-read it, or hand it to the file manager. Icons
+   * rather than a row of buttons under the heading: the tree below is what they act
+   * on, so six glyphs at the top edge cost one line instead of one row.
+   *
+   * The two edit actions are **disabled, not hidden**, while nothing has been taken
+   * hold of: the heading keeps its shape as the author moves around it, and both
+   * tooltips say what they would do (`重命名「第一章」`). The root is never their
+   * target — it is not one of its own rows, exactly as in the context menu.
+   *
+   * The conversation switch used to be the last icon here. It moved to the right
+   * end of the editor's toolbar: it changes what the *panel* shows rather than
+   * anything in this column, and that band is where the panel-wide controls are.
    */
   const header = React.createElement('div', { className: 'dsh-notebook-section' },
     React.createElement('div', { className: 'dsh-notebook-row' },
@@ -978,6 +1027,39 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
       }, React.createElement(FilePlusIcon, {})),
       React.createElement(Button, {
         variant: 'icon',
+        title: cursorEntry === undefined ? t('rename') : t('renameEntry').replace('{name}', cursorEntry.name),
+        disabled: cursorEntry === undefined,
+        attrs: {
+          'data-action': 'rename',
+          'aria-label': cursorEntry === undefined ? t('rename') : t('renameEntry').replace('{name}', cursorEntry.name),
+          // Named for the same reason the tooltip is: the mark on the row that this
+          // acts on is the tree's own (the drawn file, or the folder new files land
+          // in), and neither is labelled "the rename target".
+          'data-target-path': cursorEntry?.path ?? '',
+        },
+        onClick: () => {
+          if (cursor === undefined) return
+          // The row has to be on screen before its name can become a field in it.
+          reveal(cursor)
+          startRenaming(cursor)
+        },
+      }, React.createElement(RenameIcon, {})),
+      React.createElement(Button, {
+        variant: 'icon',
+        title: cursorEntry === undefined ? t('delete') : t('deleteEntry').replace('{name}', cursorEntry.name),
+        disabled: cursorEntry === undefined,
+        attrs: {
+          'data-action': 'delete',
+          'aria-label': cursorEntry === undefined ? t('delete') : t('deleteEntry').replace('{name}', cursorEntry.name),
+          'data-target-path': cursorEntry?.path ?? '',
+        },
+        onClick: () => {
+          if (cursor === undefined) return
+          void askDelete(cursor)
+        },
+      }, React.createElement(DeleteIcon, {})),
+      React.createElement(Button, {
+        variant: 'icon',
         title: t('refresh'),
         attrs: {
           'data-action': 'refresh',
@@ -997,18 +1079,6 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
         },
         onClick: () => { void revealFolder() },
       }, React.createElement(RevealIcon, {})),
-      canChat
-        ? React.createElement(Button, {
-          variant: 'icon',
-          title: chatVisible ? t('hideChat') : t('showChat'),
-          attrs: {
-            'data-action': 'toggle-chat',
-            'aria-pressed': chatVisible ? 'true' : 'false',
-            'aria-label': chatVisible ? t('hideChat') : t('showChat'),
-          },
-          onClick: onToggleChat,
-        }, React.createElement(ChatIcon, {}))
-        : null,
     ),
   )
 
@@ -1027,7 +1097,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   },
     header,
     // No "this directory is empty" line: an empty workspace renders as an empty
-    // list, and the two icons above are the answer.
+    // list, and the heading's icons above are the answer.
     React.createElement('ul', { className: 'dsh-notebook-list dsh-notebook-scroll' }, rows),
   )
 
@@ -1216,7 +1286,30 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
       // `Ctrl/Cmd+S` is caught on the whole column (`onKeyDown` above), not on this
       // row: the caret lives in the page underneath the pinned head, so a handler
       // bound to the head alone would never see the key.
-      React.createElement('div', { className: 'dsh-notebook-toolbar' }, typebar),
+      //
+      // The conversation switch is the **last thing in this band**, at its right end
+      // past the pickers. It used to sit in the directory column's heading, beside
+      // the create icons — but it hides a column, not a file, so it changes what the
+      // panel shows rather than what this column acts on. Here it is the last
+      // control on the band that runs across the whole panel, which is where the
+      // panel-wide switches belong. It is outside the scrolling picker row on
+      // purpose: a control pinned to the right edge must not be something you have
+      // to scroll sideways to find.
+      React.createElement('div', { className: 'dsh-notebook-toolbar' },
+        typebar,
+        canChat
+          ? React.createElement(Button, {
+            variant: 'icon',
+            title: chatVisible ? t('hideChat') : t('showChat'),
+            attrs: {
+              'data-action': 'toggle-chat',
+              'aria-pressed': chatVisible ? 'true' : 'false',
+              'aria-label': chatVisible ? t('hideChat') : t('showChat'),
+            },
+            onClick: onToggleChat,
+          }, React.createElement(ChatIcon, {}))
+          : null,
+      ),
       React.createElement(TabStrip, {
         files: open,
         active,

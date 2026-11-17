@@ -111,10 +111,21 @@ function createFs(rootDir) {
 }
 
 const root = await mkdtemp(join(tmpdir(), 'notebook-smoke-'))
+/**
+ * A second workspace, to prove the root follows the calling Session rather than
+ * anything configured: `s-other` opened this one, and the tree it sees is this one.
+ */
+const otherRoot = await mkdtemp(join(tmpdir(), 'notebook-smoke-other-'))
+await writeFile(join(otherRoot, '别的会话.md'), '# 别的会话\n', 'utf8')
 const fetchRoutes = new Map()
 const logs = []
 /** Every `[session id, directory]` the working-directory service was asked to commit. */
 const focused = []
+/** The live Sessions this profile's agent registry knows, by id. */
+const sessions = new Map([
+  ['s-main', { header: { cwd: root } }],
+  ['s-other', { header: { cwd: otherRoot } }],
+])
 
 const ctx = {
   fs: createFs(root),
@@ -137,12 +148,15 @@ const ctx = {
     if (name === 'sandboxPolicy') {
       return {
         workspaceRoot: root,
-        resolve: (options) => ({ mode: options?.session === undefined ? 'workspace-write' : 'workspace-write' }),
+        resolve: (options) => ({
+          mode: 'workspace-write',
+          workspaceRoot: options?.session?.header?.cwd ?? root,
+        }),
       }
     }
     if (name === 'agents') {
       return {
-        get: (id) => (id === 's-main' ? { id, session: { header: { cwd: root } } } : undefined),
+        get: (id) => (sessions.has(id) ? { id, session: sessions.get(id) } : undefined),
         currentInitiator: () => undefined,
       }
     }
@@ -162,12 +176,15 @@ const ctx = {
 }
 
 try {
-  apply(ctx, { rootDir: root })
+  apply(ctx, {})
 
   check('the api route is registered', fetchRoutes.has('/api/notebook'))
   check('activation logged the root',
     logs.some(([level, args]) => level === 'info' && String(args[0]).includes(`root=${root}`)),
     JSON.stringify(logs.slice(0, 2)))
+  check('the plugin takes no configuration, so activation warns about none',
+    !logs.some(([level, args]) => level === 'warn' && String(args[0]).includes('unknown configuration')),
+    JSON.stringify(logs.filter(([level]) => level === 'warn')))
 
   const route = fetchRoutes.get('/api/notebook')
   const call = async (op, { params = {}, body } = {}) => {
@@ -187,15 +204,28 @@ try {
   }
 
   const state = await call('state')
-  check('op=state reports the configured root', state.body.rootDir === root, JSON.stringify(state.body.rootDir))
-  check('op=state names the rule that chose it',
-    state.body.rootSource === 'override', JSON.stringify(state.body.rootSource))
+  check('op=state reports the deployment fallback root', state.body.rootDir === root, JSON.stringify(state.body.rootDir))
+  check('op=state reports no rule, because there is no pinned root to name',
+    !('rootSource' in state.body), JSON.stringify(Object.keys(state.body)))
   check('op=state reports a writable workspace',
     state.body.sandbox?.writable === true && state.body.sandbox?.guidance === null,
     JSON.stringify(state.body.sandbox))
   check('op=state no longer carries story machinery',
     !('projects' in state.body) && !('backend' in state.body) && !('jobs' in state.body),
     JSON.stringify(Object.keys(state.body)))
+
+  // --- the root follows the caller -------------------------------------------------
+  const otherSession = await call('state', { params: { session: 's-other' } })
+  check('a Session that opened another workspace is served that workspace',
+    otherSession.body.rootDir === otherRoot, JSON.stringify(otherSession.body.rootDir))
+  const otherFiles = await call('files', { params: { session: 's-other', project: '' } })
+  check('and its tree lists that workspace, not the deployment fallback',
+    otherFiles.body.files.some((entry) => entry.path === '别的会话.md'),
+    otherFiles.body.files.map((entry) => entry.path).join(','))
+  const mainSession = await call('state', { params: { session: 's-main' } })
+  check('one plugin instance serves both workspaces',
+    mainSession.body.rootDir === root && otherSession.body.rootDir === otherRoot,
+    `${mainSession.body.rootDir} / ${otherSession.body.rootDir}`)
 
   // --- files and folders ---------------------------------------------------------
   const firstFile = await call('create-file', { body: { project: '', title: '手稿' } })
@@ -375,8 +405,40 @@ try {
     headers: { 'content-type': 'application/json' },
   }))
   check('a malformed body is a 400', notJson.status === 400, String(notJson.status))
+
+  // --- a profile still carrying the retired rootDir --------------------------------------
+  // It must not silently appear to work: the field is warned about, and the tree is still
+  // the workspace. A second context because activation wiring is per-context.
+  const staleRoutes = new Map()
+  const staleLogs = []
+  const staleCtx = {
+    ...ctx,
+    connection: {
+      fetch: { register: (entry) => { staleRoutes.set(entry.path, entry); return async () => {} } },
+      requestRejection: () => undefined,
+    },
+    logger: {
+      info: (...args) => staleLogs.push(['info', args]),
+      warn: (...args) => staleLogs.push(['warn', args]),
+      error: (...args) => staleLogs.push(['error', args]),
+    },
+  }
+  apply(staleCtx, { rootDir: otherRoot })
+  check('a retired rootDir is reported instead of silently ignored',
+    staleLogs.some(([level, args]) => level === 'warn' && String(args[0]).includes('rootDir is no longer')),
+    JSON.stringify(staleLogs.filter(([level]) => level === 'warn')))
+  const staleRoute = staleRoutes.get('/api/notebook')
+  const staleState = await (async () => {
+    const url = new URL('http://dsh.invalid/api/notebook?op=state')
+    url.searchParams.set('session', 's-main')
+    const response = await staleRoute.fetch(new Request(url))
+    return JSON.parse(await response.text())
+  })()
+  check('and the tree still follows the Session, not the stale pin',
+    staleState.rootDir === root, JSON.stringify(staleState.rootDir))
 } finally {
   await rm(root, { recursive: true, force: true })
+  await rm(otherRoot, { recursive: true, force: true })
 }
 
 if (failures.length > 0) {

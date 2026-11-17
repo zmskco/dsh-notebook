@@ -211,14 +211,32 @@ check('buildTree nests children under their folder',
   JSON.stringify(noteNode?.children?.map(child => child.path)))
 check('countFiles counts a folder recursively',
   countFiles(noteNode) === 2, String(countFiles(noteNode)))
+// Depth is drawn as left padding on the row. The row is `width:100%` of its <li>, so
+// the padding must be *inside* that width — otherwise every level made the row wider
+// than the list, the list became horizontally scrollable, and focusing the autofocused
+// input of a new/renamed row scrolled the tree sideways, pushing its icon out of view.
+const { rowIndent, TREE_INDENT_MAX, TREE_INDENT_BASE } = exports
+check('a top-level row is indented by the base amount',
+  rowIndent(0) === TREE_INDENT_BASE, String(rowIndent(0)))
+check('each level adds one step', rowIndent(1) - rowIndent(0) === 14, String(rowIndent(1)))
+check('the indent is capped, so a deep row keeps room for its icon',
+  rowIndent(40) === TREE_INDENT_MAX && rowIndent(1000) === TREE_INDENT_MAX, String(rowIndent(40)))
+check('a broken depth still draws a row',
+  rowIndent(Number.NaN) === TREE_INDENT_BASE && rowIndent(-3) === TREE_INDENT_BASE,
+  `${String(rowIndent(Number.NaN))} ${String(rowIndent(-3))}`)
 
 // --- layout and typography ------------------------------------------------------
-const { DEFAULT_LAYOUT, clampPane, loadLayout, readLayout, resizePane, toggleTalking } = exports
+const { DEFAULT_LAYOUT, SIDE_MIN, clampPane, loadLayout, readLayout, resizePane, toggleTalking } = exports
 check('the directory column opens at 300px', DEFAULT_LAYOUT.side === 300, String(DEFAULT_LAYOUT.side))
 check('the conversation column opens at 400px', DEFAULT_LAYOUT.chat === 400, String(DEFAULT_LAYOUT.chat))
-check('the document keeps its minimum width', resizePane({ side: 200, chat: 400 }, 'side', 900, 1000).side <= 1000 - 360 - 400,
-  JSON.stringify(resizePane({ side: 200, chat: 400 }, 'side', 900, 1000)))
-check('a pane is clamped to its bounds', clampPane(50, 200, 520) === 200 && clampPane(9000, 200, 520) === 520, '')
+check('the directory column cannot be dragged narrower than its heading',
+  // Six 24px heading icons, the column's name, 2px gaps and 26px of padding is what
+  // this number is measured from; below it the name would have to truncate to make
+  // room for the controls.
+  SIDE_MIN >= 220, String(SIDE_MIN))
+check('the document keeps its minimum width', resizePane({ side: SIDE_MIN, chat: 400 }, 'side', 900, 1000).side <= 1000 - 360 - 400,
+  JSON.stringify(resizePane({ side: SIDE_MIN, chat: 400 }, 'side', 900, 1000)))
+check('a pane is clamped to its bounds', clampPane(50, SIDE_MIN, 520) === SIDE_MIN && clampPane(9000, SIDE_MIN, 520) === 520, '')
 check('a broken stored layout still opens',
   readLayout('{not json').side === DEFAULT_LAYOUT.side, JSON.stringify(readLayout('{not json')))
 check('hiding the conversation keeps the directory width',
@@ -314,9 +332,22 @@ walk(column, (element) => {
   const action = element.props?.['data-action'] ?? element.props?.attrs?.['data-action']
   if (typeof action === 'string' && !actions.includes(action)) actions.push(action)
 })
-check('the heading carries create, refresh, reveal and chat controls',
-  ['new-dir', 'new-file', 'refresh', 'reveal', 'toggle-chat'].every(action => actions.includes(action)),
+check('the heading carries both creates, rename, delete, refresh and reveal',
+  ['new-dir', 'new-file', 'rename', 'delete', 'refresh', 'reveal'].every(action => actions.includes(action)),
   actions.join(','))
+check('the conversation switch is not in the directory column any more',
+  (() => {
+    // The column walk above covers both of `NotebookTab`'s panes, so the claim is
+    // made against the directory pane alone: the switch has to have left this one.
+    const pane = findIn(column, element => String(element.props?.className ?? '').includes('dsh-notebook-side'))
+    if (pane === undefined) return false
+    const inPane = []
+    walk(pane, (element) => {
+      const action = element.props?.['data-action'] ?? element.props?.attrs?.['data-action']
+      if (typeof action === 'string') inPane.push(action)
+    })
+    return !inPane.includes('toggle-chat') && inPane.includes('rename') && inPane.includes('delete')
+  })(), 'the switch is still in the directory column')
 check('the story picker and its create button are gone',
   !labels.includes('newStory') && !source.includes('data-picker') && !source.includes('create-project'),
   labels.join('|'))
@@ -328,8 +359,28 @@ const order = (headingRow?.props?.children ?? []).map((child) => {
   if (className.includes('dsh-notebook-spacer')) return 'spacer'
   return child?.props?.['data-action'] ?? child?.props?.attrs?.['data-action'] ?? ''
 }).filter(token => token !== '')
-check('the heading reads title … creates, refresh, reveal, then the chat switch',
-  order.join(',') === 'title,spacer,new-dir,new-file,refresh,reveal,toggle-chat', order.join(','))
+check('the heading reads title, creates, the two edits, then the workspace actions',
+  order.join(',') === 'title,spacer,new-dir,new-file,rename,delete,refresh,reveal', order.join(','))
+// The two edit actions name their target and say when they have none: the tree
+// marks the drawn file and the folder new files land in, neither of which is
+// labelled "the rename target", so a bare 重命名 would be a guess.
+const headingButtons = headingRow?.props?.children ?? []
+const byAction = (name) => headingButtons.find(child => (child?.props?.['data-action'] ?? child?.props?.attrs?.['data-action']) === name)
+check('rename and delete are disabled while nothing has been taken hold of',
+  byAction('rename')?.props?.disabled === true && byAction('delete')?.props?.disabled === true,
+  JSON.stringify([byAction('rename')?.props?.disabled, byAction('delete')?.props?.disabled]))
+check('and they name the entry they would act on when there is one',
+  /t\("renameEntry"\)\.replace\("\{name\}", cursorEntry\.name\)/.test(source)
+  && /t\("deleteEntry"\)\.replace\("\{name\}", cursorEntry\.name\)/.test(source), '')
+check('the heading acts on the last entry taken hold of, not on a separate selection',
+  // Three gestures mean "this one": opening a file, opening or closing a folder,
+  // and creating something. Each records it; nothing else does.
+  (source.match(/setCursor\(path\)/g) ?? []).length === 2
+  && source.includes('setCursor(made.path)'), '')
+check('a rename carries the cursor with the entry',
+  /setCursor\(\(previous\) => previous === renaming\.path \? renamed\.path : previous\)/.test(source), '')
+check('deleting the cursor entry leaves the heading with nothing to act on',
+  /setCursor\(\(previous\) => previous !== void 0 && gone\(previous\) \? void 0 : previous\)/.test(source), '')
 check('a new file is named in an empty row inside the tree',
   source.includes('dsh-notebook-ghost') && source.includes('dsh-notebook-ghostInput'), '')
 check('the empty row commits on Enter and cancels on Escape',
@@ -478,6 +529,18 @@ check('the editor head holds the toolbar above the tabs',
     const strip = children.findIndex(child => child?.type === TabStrip)
     return typebar >= 0 && strip === typebar + 1
   })(), 'the tab strip is not under the toolbar')
+check('the conversation switch ends the editor header, at its right edge',
+  (() => {
+    const toolbar = findIn(column, element => String(element.props?.className ?? '') === 'dsh-notebook-toolbar')
+    if (toolbar === undefined) return false
+    const children = [toolbar.props?.children].flat().filter(child => child !== null && child !== undefined)
+    const last = children.at(-1)
+    // Last child, and after the pickers: the switch is the panel-wide control at the
+    // right end of the band, not another document control.
+    return last?.props?.attrs?.['data-action'] === 'toggle-chat'
+      && children.length === 2
+      && String(children[0]?.props?.className ?? '').includes('typebar')
+  })(), 'the switch is not the last thing in the editor toolbar')
 
 // --- the tree's right-click menu -------------------------------------------------------
 // DSH provides one shared context menu (`ui-context-menu`), which this plugin extends
@@ -729,6 +792,17 @@ check('the toolbar has a fixed height, so a narrow column cannot move the header
   // relative to the directory column's; a fixed height scrolls instead.
   /\.dsh-notebook-toolbar\{[^}]*height:44px/.test(css)
   && !/\.dsh-notebook-toolbar\{[^}]*min-height/.test(css), '')
+check('the toolbar pins the conversation switch and scrolls only the pickers',
+  // The band itself must not scroll: the one control on it that is not about the
+  // document would otherwise be the thing that scrolls out of sight in a narrow
+  // column. The pickers get their own scrolling strip between the two edges.
+  /\.dsh-notebook-toolbar\{[^}]*overflow:hidden/.test(css)
+  && /\.dsh-notebook-toolbar > \.dsh-notebook-typebar\{[^}]*overflow-x:auto/.test(css)
+  && /\.dsh-notebook-toolbar > button\.dsh-notebook-btn\{[^}]*flex:none/.test(css), '')
+check('a narrow toolbar scrolls its pickers instead of wrapping onto a clipped line',
+  // The band is a fixed 44px with `overflow:hidden`, so a wrapped second line of
+  // pickers would simply be cut off — silently, and only in narrow columns.
+  /\.dsh-notebook-toolbar > \.dsh-notebook-typebar\{[^}]*flex-wrap:nowrap/.test(css), '')
 check('the page carries no frame of its own',
   // The manuscript used to be a bordered, rounded card inside the panel — three
   // nested rectangles where the writing surface should be one.
@@ -740,6 +814,12 @@ check('the directory column does not scroll, so its heading stays put',
   // headings must stay where the shared 44px line is drawn.
   /\.dsh-notebook-side\{[^}]*overflow:hidden/.test(css)
   && /\.dsh-notebook-scroll\{[^}]*overflow:auto/.test(css), '')
+check('the heading gives way before its controls do',
+  // The band is a fixed 44px, so a wrapped name would be clipped rather than shown:
+  // it truncates, and the six icons keep their size.
+  /\.dsh-notebook-sectionTitle\{[^}]*white-space:nowrap/.test(css)
+  && /\.dsh-notebook-sectionTitle\{[^}]*text-overflow:ellipsis/.test(css)
+  && /\.dsh-notebook-section button\.dsh-notebook-btn\[data-variant="icon"\]\{[^}]*flex:none/.test(css), '')
 check('the picker groups are trays, not a row of bordered boxes',
   /\.dsh-notebook-seg\{[^}]*border-radius:8px/.test(css)
   && /\.dsh-notebook-seg > button\.dsh-notebook-btn\{[^}]*border:0/.test(css)
@@ -868,6 +948,28 @@ check('an unnamed row draws the generic file or folder, not a looked-up name',
   `${TreeIcon({ name: '' }).props['data-icon']}/${TreeIcon({ name: '', directory: true }).props['data-icon']}`)
 check('a row is the same edge as the toolbar glyphs',
   fileRow.props.style.width === TREE_ICON_SIZE && TREE_ICON_SIZE === 16, String(TREE_ICON_SIZE))
+// The reported bug, asserted at its cause: depth is drawn as left padding on a
+// `width:100%` row. With content-box sizing the padding was added outside that width,
+// so every level made the row wider than the list; the list then had a horizontal
+// scroll position, and focusing the autofocused input of a new or renamed row scrolled
+// it — the tree slid left by the row's depth and its icon ended up out of view.
+check('an indent never widens a row past its column',
+  // `border-box` is what keeps the padding inside `width:100%`.
+  /\.dsh-notebook-item\{[^}]*box-sizing:border-box/.test(css) && /\.dsh-notebook-item\{[^}]*width:100%/.test(css), '')
+check('the tree cannot scroll sideways, so focus cannot slide it',
+  // `clip` rather than `hidden`: hidden still leaves a scroll position that
+  // `scrollIntoView` can move, and the row's own autofocus does exactly that.
+  /\.dsh-notebook-list\.dsh-notebook-scroll\{[^}]*overflow-x:clip/.test(css), '')
+check('every row takes its indent from the one helper',
+  // Three rows are drawn per level — the row, the empty row a name is typed into, and
+  // the row an inline rename edits. A level only one of them applied is a row that
+  // jumps sideways the moment the author starts typing.
+  (source.match(/rowIndent\(/g) ?? []).length >= 3 && !source.includes('8 + depth * 14'), '')
+check('the deepest indent still leaves room for an icon',
+  // Derived from the column's own floor rather than picked: list padding 12, row
+  // border 2, icon 16 and gap 8 come off SIDE_MIN first.
+  exports.SIDE_MIN - 12 - 2 - TREE_ICON_SIZE - 8 >= TREE_INDENT_MAX,
+  `SIDE_MIN ${String(exports.SIDE_MIN)} vs indent cap ${String(TREE_INDENT_MAX)}`)
 check('the tree rows draw the artwork, not a Lucide file or folder glyph',
   !source.includes('FileIcon') && !source.includes('FolderIcon'), 'a generic glyph is still in the bundle')
 check('the vendored licence ships with the package',
@@ -912,7 +1014,11 @@ check('the inventory title is the same name', localeMeta.zh.title === zhDict.pan
 check('both dictionaries carry the same keys',
   Object.keys(zhDict).sort().join(',') === Object.keys(DICTS.en).sort().join(','), '')
 check('the action labels are present',
-  ['newDir', 'newFile', 'refresh', 'reveal', 'writing', 'source'].every(key => typeof zhDict[key] === 'string'), '')
+  ['newDir', 'newFile', 'refresh', 'reveal', 'rename', 'delete', 'renameEntry', 'deleteEntry', 'writing', 'source']
+    .every(key => typeof zhDict[key] === 'string'), '')
+check('the heading\'s two edit labels name their target',
+  zhDict.renameEntry.includes('{name}') && zhDict.deleteEntry.includes('{name}')
+  && DICTS.en.renameEntry.includes('{name}') && DICTS.en.deleteEntry.includes('{name}'), '')
 check('the old product name is gone from the artifact',
   !source.includes('写作助手') && !source.includes('微光') && !source.includes('novel-studio'), 'a retired name is still shipped')
 // The vendored icon tables are third-party data, not product copy: they legitimately

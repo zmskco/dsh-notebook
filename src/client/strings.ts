@@ -32,8 +32,7 @@ export const zh = {
   unsaved: '未保存',
   chars: '字',
   style: '渲染风格',
-  unwritableTitle: '小说目录不可写',
-  outsideWorkspaceTitle: '书架在当前工作区之外',
+  unwritableTitle: '工作区不可写',
   chatNoHost: '这个界面没有提供会话席位，无法在这里嵌入 Harness 对话。',
   resizeSide: '拖动调整目录区宽度（也可用左右方向键）',
   resizeChat: '拖动调整对话区宽度（也可用左右方向键）',
@@ -70,6 +69,11 @@ export const zh = {
   rename: '重命名',
   delete: '删除',
   renameHint: '回车确认，Esc 取消',
+  /* The heading's two edit actions, which act on the entry last taken hold of.
+     They say which one, because the tree has no third "selected" mark to read it
+     from. */
+  renameEntry: '重命名「{name}」',
+  deleteEntry: '删除「{name}」',
   /** Deletion is the one thing here that typing cannot undo, so it asks first. */
   deleteTitle: '删除',
   deleteFileQuestion: '确定删除「{name}」？此操作无法撤销。',
@@ -101,8 +105,7 @@ export const en: Record<StringKey, string> = {
   unsaved: 'Unsaved changes',
   chars: 'chars',
   style: 'Render style',
-  unwritableTitle: 'Novel directory is not writable',
-  outsideWorkspaceTitle: 'Shelf is outside the current workspace',
+  unwritableTitle: 'The workspace is not writable',
   chatNoHost: 'This shell exposes no conversation seat, so the harness chat cannot be embedded here.',
   resizeSide: 'Drag to resize the directory column (or use the arrow keys)',
   resizeChat: 'Drag to resize the conversation column (or use the arrow keys)',
@@ -131,6 +134,8 @@ export const en: Record<StringKey, string> = {
   rename: 'Rename',
   delete: 'Delete',
   renameHint: 'Enter to confirm, Esc to cancel',
+  renameEntry: 'Rename “{name}”',
+  deleteEntry: 'Delete “{name}”',
   deleteTitle: 'Delete',
   deleteFileQuestion: 'Delete “{name}”? This cannot be undone.',
   deleteFolderQuestion: 'Delete the folder “{name}” and everything in it? This cannot be undone.',

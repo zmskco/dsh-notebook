@@ -1,49 +1,50 @@
 /**
- * Which directory a call's stories live in.
+ * Which directory a call's notes live in.
  *
- * Stories live **in the workspace the operator opened**: the plugin takes the
+ * Notes live **in the workspace the operator opened**: the plugin takes the
  * calling Session's immutable cwd and treats it as the root, so every write it
  * makes lands in a directory that Session's own sandbox policy already permits —
  * and so does every write the *model* makes with its own `write`/`edit` tools or
  * a `pwsh` script, which are bounded by that same workspace rather than by
  * anything this plugin declares.
  *
- * That is the whole permission story: one boundary, chosen once, by the person
- * who opened the workspace. There is no shelf directory any more — a `novels/`
- * the plugin invented was a second root to explain, and the panel's tree was
- * already the workspace; a story is simply a folder in it.
+ * That is the whole permission story, and it is why there is no `rootDir` any
+ * more. There used to be one, and it could not be honoured: the panel's requests
+ * always carry a live Session, so the root was the workspace no matter what the
+ * profile pinned — while `op=state` still reported the pin as the rule that had
+ * chosen it. A configuration knob that changes nothing but the log line is worse
+ * than no knob, and the arrangement it promised was one nobody should want: a
+ * second root only this plugin can write, where the model's own tools are
+ * refused by the very boundary they are confined to.
  *
- * An explicit `rootDir` in the profile row still wins, because a deployment may
- * pin one library that several workspaces share — that is now the *only* way to
- * put stories outside the open workspace, and it is a configuration edit rather
- * than a panel action. With neither a live Session nor a pin, the
- * caller-supplied fallback is used: the sandbox-aware default computed at
- * activation, which is what a session-less panel sees.
+ * To put a library somewhere else, open that directory as the workspace. One
+ * directory, one decision, made by the person who opened it.
+ *
+ * With no live Session — a scripted caller, or the instant before the page binds
+ * — the activation fallback is used; see `bootstrap.ts` for how it is chosen.
  *
  * `header.cwd` is preferred over `workingDirectory.get` on purpose. The former
  * is what the operator opened and what `sandboxPolicy.resolve` treats as the
  * Session's write boundary; the latter follows an in-session `cd`, which would
- * silently move every story the plugin is reading.
+ * silently move every file the plugin is reading.
  *
  * @module notebook/story/root
  */
 import type { AgentsService, FsService, Logger, SandboxPolicyService } from '../dsh.js'
 import { ProjectStore } from './project.js'
 import { storyWritePolicy, type LiveSession } from './sandbox.js'
-import type { NotebookConfig } from '../types.js'
 
 /**
- * The story root one call resolved to, and which rule chose it.
+ * The root one call resolved to, and which rule chose it.
  */
 export interface StoryRoot {
-  /** Absolute directory holding the stories; each child directory is one. */
+  /** Absolute directory holding the notes; the panel's tree is rooted here. */
   dir: string
   /**
-   * `override` — pinned by the profile row's `rootDir`.
    * `workspace` — the calling Session's cwd itself.
-   * `fallback` — the activation default, used when neither exists.
+   * `fallback` — the activation default, used when there is no Session.
    */
-  source: 'override' | 'workspace' | 'fallback'
+  source: 'workspace' | 'fallback'
 }
 
 /** One resolved call target: the store to use, the root it reads, and the Session. */
@@ -64,8 +65,8 @@ export interface ResolvedRoot {
 /**
  * Resolve one call's target.
  *
- * Declared once here and used by every surface that needs it — the control
- * plane, the media route and the model tools — so all three agree on the shape.
+ * Declared once here and used by every surface that needs it — the control plane
+ * and the sandbox assessment — so all of them agree on the shape.
  * @param sessionId - the calling Session, when the caller knows it.
  * @returns that call's store, root and Session.
  */
@@ -83,15 +84,19 @@ function liveSession(agents: AgentsService | undefined, sessionId: string | unde
 }
 
 /**
- * Decide which directory a call's stories live in.
- * @param config - the validated configuration; its `rootDir` is already absolute.
+ * Decide which directory a call's notes live in.
+ *
+ * There is nothing to choose between: a live Session *is* the root.
+ * @param fallbackRoot - the activation default, for a caller with no Session.
  * @param workspace - the calling Session's workspace, when known.
  * @returns the root and the rule that chose it.
  */
-export function storyRootFor(config: NotebookConfig, workspace: string | undefined): StoryRoot {
-  if (config.rootDirOverride) return { dir: config.rootDir, source: 'override' }
-  if (workspace !== undefined) return { dir: workspace, source: 'workspace' }
-  return { dir: config.rootDir, source: 'fallback' }
+export function storyRootFor(fallbackRoot: string, workspace: string | undefined): StoryRoot {
+  // The path is used verbatim: a trailing space is legal input, and trimming the
+  // value would resolve a directory the operator did not open. Only the
+  // emptiness test looks at the trimmed form.
+  if (workspace !== undefined && workspace.trim().length > 0) return { dir: workspace, source: 'workspace' }
+  return { dir: fallbackRoot, source: 'fallback' }
 }
 
 /** Roots kept as live stores; a session beyond this evicts the least recently added. */
@@ -106,12 +111,13 @@ const MAX_CACHED_ROOTS = 8
  * switched while the plugin is serving it, and the write policy was stamped with
  * the old one — a second store costs a directory listing, a stale mode costs a
  * write that should have been allowed.
- * @param deps - filesystem, configuration, sandbox policy, agent registry, logger.
+ * @param deps - filesystem, the session-less fallback root, sandbox policy, agent registry, logger.
  * @returns a resolver from an optional Session id to that call's store and root.
  */
 export function createRootResolver(deps: {
   fs: FsService
-  config: NotebookConfig
+  /** Absolute directory a caller with no Session falls back to. */
+  fallbackRoot: string
   policy: SandboxPolicyService | undefined
   agents: AgentsService | undefined
   log: Logger
@@ -119,7 +125,7 @@ export function createRootResolver(deps: {
   const cache = new Map<string, ProjectStore>()
   return (sessionId) => {
     const session = liveSession(deps.agents, sessionId)
-    const root = storyRootFor(deps.config, session?.header.cwd)
+    const root = storyRootFor(deps.fallbackRoot, session?.header.cwd)
     const writePolicy = storyWritePolicy(root.dir, deps.policy, session)
     const key = `${root.dir}\u0000${writePolicy?.mode ?? ''}`
     let store = cache.get(key)

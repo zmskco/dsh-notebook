@@ -5,20 +5,6 @@
  * this module carries no runtime edge between the halves.
  */
 
-/** Resolved plugin configuration. */
-export interface NotebookConfig {
-  /** Directory the panel's tree is rooted at; absolute. */
-  rootDir: string
-  /**
-   * Whether `rootDir` was actually configured.
-   *
-   * `false` means the value above is only the activation fallback: the root then
-   * follows the workspace of the calling Session, so a fresh install reads and
-   * writes the directory the operator opened. See `root.ts`.
-   */
-  rootDirOverride: boolean
-}
-
 /** Every failure the HTTP surface returns carries one of these codes. */
 export type ApiErrorCode =
   | 'bad-request'
@@ -70,7 +56,7 @@ export interface SandboxReport {
   mode: 'read-only' | 'workspace-write' | 'danger-full-access' | null
   /** The boundary a panel write is confined to, or null when unknown. */
   workspaceRoot: string | null
-  /** Whether a write to `rootDir` is expected to succeed. */
+  /** Whether a write to the workspace is expected to succeed. */
   writable: boolean
   /** The remedy, already spelled out with absolute paths, or null when writable. */
   guidance: string | null
@@ -78,15 +64,12 @@ export interface SandboxReport {
 
 /** The `op=state` response: everything the page needs before listing a tree. */
 export interface NotebookState {
-  /** Absolute directory the tree is rooted at. */
-  rootDir: string
   /**
-   * Which rule chose `rootDir`.
+   * Absolute directory the tree is rooted at.
    *
-   * `workspace` — the calling Session's own directory, the normal case.
-   * `override` — a `rootDir` pinned in the profile row.
-   * `fallback` — neither was available (a session-less caller).
+   * It is the calling Session's own workspace — there is no second root and no
+   * rule to report, because the panel shows the directory the operator opened.
    */
-  rootSource: 'override' | 'workspace' | 'fallback'
+  rootDir: string
   sandbox: SandboxReport
 }

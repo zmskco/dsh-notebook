@@ -1,7 +1,9 @@
 # One row activates both halves: the Host plugin (lib/index.js, via the package
 # `exports["."]`) and the Client bundle (lib/client.js, via `dsh.client`).
+#
+# No `config`: the panel's tree is the workspace the calling Session opened, so
+# there is no root to configure. A profile that still carries `rootDir` is warned
+# about at activation and otherwise ignored — see README 「树根与权限」.
 - insert:
     - id: notebook
       name: '@zmskco/dsh-notebook'
-      config:
-        rootDir: null

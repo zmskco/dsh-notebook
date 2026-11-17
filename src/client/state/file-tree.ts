@@ -261,3 +261,41 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+/** The padding before a top-level row's icon, in px. */
+export const TREE_INDENT_BASE = 8
+
+/** How much one level of nesting adds, in px. The indent *is* the tree. */
+export const TREE_INDENT = 14
+
+/**
+ * The deepest indent the tree draws, in px.
+ *
+ * A cap rather than an unbounded `depth * 14`: a row has one icon (16px), one gap
+ * (8px) and a name, all inside the column's narrowest width (`SIDE_MIN` in
+ * `state/layout`, 240px). Past roughly this much padding there is no room left for
+ * the icon itself, so a deeply nested row would draw its icon outside its own box
+ * and the name would be unreadable anyway. Past the cap every level shares the
+ * deepest indent — the same choice VS Code's explorer makes, and the name still
+ * says which file it is.
+ *
+ * The number is derived, not picked: 240 (SIDE_MIN) − 12 (list padding) − 2 (row
+ * border) − 16 (icon) − 8 (gap) leaves 202 for the icon's offset; 160 keeps a
+ * readable name on top of that.
+ */
+export const TREE_INDENT_MAX = 160
+
+/**
+ * The left padding that draws one row's depth.
+ *
+ * Held here rather than in the row markup because **three** places need it and
+ * they must agree: the rows, the empty row a name is typed into, and the row an
+ * inline rename edits. A level that one of them forgot was a row that jumped
+ * sideways when the author started typing.
+ * @param depth - nesting level; 0 is a top-level entry.
+ * @returns left padding in px, never above {@link TREE_INDENT_MAX}.
+ */
+export function rowIndent(depth: number): number {
+  if (!Number.isFinite(depth) || depth <= 0) return TREE_INDENT_BASE
+  return Math.min(TREE_INDENT_BASE + Math.floor(depth) * TREE_INDENT, TREE_INDENT_MAX)
+}
