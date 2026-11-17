@@ -1,6 +1,6 @@
 {
   "name": "@zmskco/dsh-notebook",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "笔记本 (Notebook) — a markdown notebook for the DeepSeek Harness workspace: file tree, WYSIWYG editor, autosave and an embedded AI chat.",
   "icon": "./icon.png",
   "repository": {
