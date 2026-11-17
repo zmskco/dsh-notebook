@@ -544,23 +544,57 @@ const liveRows = []
 walk(gestureColumn(false), (element) => {
   if (typeof element.props?.onContextMenu === 'function') liveRows.push(element)
 })
-// The stub render has no listing (state starts empty), so the only element with a
-// gesture is the directory column's heading — which is the workspace-root target.
-check('the tree takes the right-click gesture', liveRows.length >= 1, String(liveRows.length))
-check('file and folder rows bind the same gesture',
-  // They are built from the same helper as the heading; without a listing the stub
-  // cannot render one, so the binding is asserted at the source.
-  (source.match(/\.\.\.triggerProps\(entryTarget\(node\)\)/g) ?? []).length === 2,
-  String((source.match(/\.\.\.triggerProps\(entryTarget\(node\)\)/g) ?? []).length))
-check('the row suppresses the browser menu and opens the shared one',
+// The stub render has no listing (state starts empty), so the element with a gesture
+// is the directory column itself — which is the point: the whole column takes it, so
+// right-clicking the blank space below the rows still opens the root menu.
+check('the whole directory column takes the right-click gesture', liveRows.length === 1, String(liveRows.length))
+check('the column\'s target is the workspace root',
+  liveRows[0]?.props?.['data-root'] === undefined
+  && liveRows[0]?.type === 'div'
+  && String(liveRows[0]?.props?.className ?? '').includes('dsh-notebook-side'),
+  String(liveRows[0]?.props?.className))
+check('file and folder rows bind the same gesture and stop it',
+  // They are built from the same helper as the column; without a listing the stub
+  // cannot render one, so the binding is asserted at the source. `stop: true` is what
+  // keeps a row's menu from being replaced by the column's.
+  (source.match(/\.\.\.triggerProps\(entryTarget\(node\), \{ stop: true \}\)/g) ?? []).length === 2,
+  String((source.match(/\.\.\.triggerProps\(entryTarget\(node\)/g) ?? []).length))
+check('the heading does not bind its own menu (the column already does)',
+  // Two bindings for one target at one point would open, then close, the popup.
+  !/sectionTitle[\s\S]{0,200}rootMenu/.test(source), 'the heading still binds a second menu')
+check('the column suppresses the browser menu and opens the shared one',
   (() => {
-    const row = liveRows[0]
+    const column = liveRows[0]
     let prevented = false
-    row.props.onContextMenu({ preventDefault: () => { prevented = true }, clientX: 40, clientY: 90 })
+    let stopped = false
+    column.props.onContextMenu({
+      preventDefault: () => { prevented = true },
+      stopPropagation: () => { stopped = true },
+      clientX: 40, clientY: 90,
+    })
     const first = menuOpens[0]
-    return prevented && menuOpens.length === 1 && first?.point?.x === 40 && first?.point?.y === 90
+    return prevented && !stopped && menuOpens.length === 1
+      && first?.point?.x === 40 && first?.point?.y === 90
       && first?.target?.kind === 'notebookEntry'
+      // The column is the outermost handler: its target is the workspace root.
+      && first?.target?.value?.path === '' && first?.target?.value?.directory === true
   })(), JSON.stringify(menuOpens[0] ?? null))
+check('a nested trigger stops the event so its own target wins',
+  (() => {
+    const before = menuOpens.length
+    let stopped = false
+    const nested = exports.triggerProps(
+      { kind: 'notebookEntry', value: { path: '笔记/第一章', name: '第一章', directory: false } },
+      { stop: true },
+    )
+    nested.onContextMenu({
+      preventDefault: () => {},
+      stopPropagation: () => { stopped = true },
+      clientX: 5, clientY: 7,
+    })
+    const last = menuOpens.at(-1)
+    return stopped && menuOpens.length === before + 1 && last?.target?.value?.path === '笔记/第一章'
+  })(), 'a row would have been overridden by the column')
 check('the captured target carries the row it was opened on',
   typeof menuOpens[0]?.target?.value?.path === 'string'
   && typeof menuOpens[0]?.target?.value?.directory === 'boolean', JSON.stringify(menuOpens[0]?.target?.value))

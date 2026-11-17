@@ -44,7 +44,7 @@ export function menuService(): ContextMenusService | undefined {
 
 /** The handlers one row spreads onto its element. */
 export interface MenuTriggerProps {
-  onContextMenu?: (event: { preventDefault(): void, clientX: number, clientY: number }) => void
+  onContextMenu?: (event: { preventDefault(): void, stopPropagation(): void, clientX: number, clientY: number }) => void
   onKeyDown?: (event: { key: string, shiftKey: boolean, preventDefault(): void, currentTarget: unknown }) => void
 }
 
@@ -57,16 +57,27 @@ export interface MenuTriggerProps {
  * the shell's own hook uses, so a keyboard user sees the menu where a mouse user
  * would have right-clicked.
  *
+ * **`stop` is what makes the whole directory area targetable.** The column itself
+ * takes the gesture for the workspace root, so right-clicking blank space below the
+ * rows still offers "new file / new folder here"; a row's own handler then has to
+ * stop the event, or the column's would run as well and replace the row's target
+ * with the root (last opener wins). Without `stop` the row-level menu would never
+ * be the one you see.
+ *
  * With no service published the handlers are empty, which leaves the element's own
  * behaviour (the browser menu) in place rather than swallowing the gesture.
  * @param target - the captured target; built per row.
- * @returns the handlers to spread onto the row, or `undefined` without a menu.
+ * @param options - `stop: true` for a nested trigger (a row inside the column).
+ * @returns the handlers to spread onto the row, or `{}` without a menu.
  */
-export function triggerProps(target: ContextMenuTarget): MenuTriggerProps {
+export function triggerProps(target: ContextMenuTarget, options: { stop?: boolean } = {}): MenuTriggerProps {
   if (current === undefined) return {}
   return {
     onContextMenu: (event) => {
       event.preventDefault()
+      // A row inside the column: the column's handler is the same gesture and would
+      // otherwise open a second menu on the workspace root.
+      if (options.stop === true) event.stopPropagation()
       current?.open(target, { x: event.clientX, y: event.clientY })
     },
     onKeyDown: (event) => {

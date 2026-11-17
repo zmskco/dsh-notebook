@@ -635,12 +635,12 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   })
 
   /**
-   * The row's menu trigger bindings.
+   * The workspace-root menu target, bound to the whole directory column.
    *
-   * Read from the module the plugin published, not from a prop: `useContextMenu()`
-   * never reached this component, and `ctx.contextMenus.open()` is the shell's other
-   * supported entry point. With no service published the handlers are empty and the
-   * browser's own menu stays, which is the right degradation.
+   * Right-clicking anywhere in the column — a row, the heading, or the empty space
+   * below the last row — opens a menu; a row stops the event and opens its own, so
+   * this one is what the empty areas fall back to. Its actions are the two creates
+   * and the reveal: the root cannot be renamed or deleted (see `entryActions`).
    */
   const rootMenu = triggerProps({
     kind: ENTRY_TARGET,
@@ -897,7 +897,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
             'aria-expanded': open,
             title: node.path,
             style: { paddingLeft: indent },
-            ...triggerProps(entryTarget(node)),
+            ...triggerProps(entryTarget(node), { stop: true }),
             onClick: () => { toggleDir(node.path) },
           },
           // The folder *is* the disclosure control: an open folder means the
@@ -924,7 +924,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
           'data-open': findFile(open, node.path) === undefined ? 'false' : 'true',
           title: node.path,
           style: { paddingLeft: indent },
-          ...triggerProps(entryTarget(node)),
+          ...triggerProps(entryTarget(node), { stop: true }),
           onClick: () => { choose(node.path) },
         },
         React.createElement(TreeIcon, { name: node.name }),
@@ -947,14 +947,13 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
    */
   const header = React.createElement('div', { className: 'dsh-notebook-section' },
     React.createElement('div', { className: 'dsh-notebook-row' },
-      // Right-clicking the heading means "the workspace itself": the menu opened
-      // here offers the two creates and the reveals, but not rename or delete — the
-      // root is not an entry in its own tree and there is nothing to point at.
+      // The heading carries no menu of its own: the whole column does (see below), and
+      // a second binding on this element would open the same target twice at the same
+      // point — which the shared popup treats as "close the one I just opened".
       React.createElement('div', {
         className: 'dsh-notebook-sectionTitle',
         style: { margin: 0, cursor: 'default' },
         title: t('library'),
-        ...rootMenu,
       }, t('library')),
       React.createElement('div', { className: 'dsh-notebook-spacer' }),
       React.createElement(Button, {
@@ -1015,7 +1014,17 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
 
   // One column, stacked: the heading, then the tree of the workspace. The widths
   // travel on the row, so nothing here moves when a column is dragged.
-  const directory = React.createElement('div', { className: 'dsh-notebook-pane dsh-notebook-side' },
+  //
+  // The **whole column** takes the context-menu gesture, not only the rows. Right-
+  // clicking the empty space below the last row is a natural move — "create something
+  // here" is aimed at a place, and an empty folder is all blank space — so the column
+  // itself opens the workspace-root menu, and each row stops the event to open its own
+  // (see `triggerProps`). Without that, the only way to create a first file in an empty
+  // workspace would be the heading's icons.
+  const directory = React.createElement('div', {
+    className: 'dsh-notebook-pane dsh-notebook-side',
+    ...rootMenu,
+  },
     header,
     // No "this directory is empty" line: an empty workspace renders as an empty
     // list, and the two icons above are the answer.
