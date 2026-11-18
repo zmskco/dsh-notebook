@@ -40,16 +40,123 @@ export function parentOf(path: string): string {
 }
 
 /**
- * Name ordering that reads the way a manuscript does.
+ * Natural name ordering: runs of digits compare as numbers, not characters.
  *
- * `numeric` is what puts 第2章 before 第10章; without it a hundred-chapter
- * project reads in dictionary order and looks shuffled.
+ * `笔记10.md` belongs after `笔记9.md`, and so does `10.md` after `9.md`; sorted as
+ * plain strings the second one lands between `1` and `2`. `localeCompare`'s
+ * `numeric` option answers most of this, but it is delegated to the platform's ICU
+ * data, and it also decides that `9.md` and `09.md` are *equal* — an unstable
+ * comparator, so two rows whose names differ only in zero padding can swap on any
+ * re-render. This comparator is written out instead:
+ *
+ * - a run of ASCII digits compares by value (leading zeros ignored, then the
+ *   shorter run first, so `09.md` and `9.md` have one fixed order);
+ * - a run of anything else compares with the Chinese locale, so 第/一/二 group the
+ *   way a reader expects and Latin names keep case-insensitive grouping;
+ * - a digit run sorts before a non-digit run at the same position, which is what
+ *   makes `9.md` precede `笔记.md` deterministically;
+ * - full-width digits (０-９) are folded to ASCII first, because a name typed with
+ *   an input method is the same name.
  * @param left - one name.
  * @param right - another name.
+ * @returns the comparator result: negative, zero, or positive.
+ */
+export function compareNames(left: string, right: string): number {
+  const a = foldDigits(left)
+  const b = foldDigits(right)
+  let i = 0
+  let j = 0
+  while (i < a.length && j < b.length) {
+    const aDigit = isAsciiDigit(a.charCodeAt(i))
+    const bDigit = isAsciiDigit(b.charCodeAt(j))
+    if (aDigit !== bDigit) return aDigit ? -1 : 1
+    const aEnd = runEnd(a, i, aDigit)
+    const bEnd = runEnd(b, j, bDigit)
+    const order = aDigit
+      ? compareDigitRuns(a.slice(i, aEnd), b.slice(j, bEnd))
+      : compareTextRuns(a.slice(i, aEnd), b.slice(j, bEnd))
+    if (order !== 0) return order
+    i = aEnd
+    j = bEnd
+  }
+  // A name that ran out first sorts first: `笔记` before `笔记2`.
+  if (i < a.length) return 1
+  if (j < b.length) return -1
+  // Folding can make two distinct names compare equal — `１０.md` against `10.md`
+  // is the case that matters here, because both are real files on a case-sensitive
+  // disk. The raw names settle it, so the sort never leaves a pair to the engine.
+  if (left === right) return 0
+  return left < right ? -1 : 1
+}
+
+/** Whether one UTF-16 code unit is an ASCII digit. */
+function isAsciiDigit(code: number): boolean {
+  return code >= 0x30 && code <= 0x39
+}
+
+/**
+ * Where a run of the same kind ends.
+ * @param text - the name.
+ * @param from - the run's first index.
+ * @param digit - whether the run is digits.
+ * @returns the first index after the run.
+ */
+function runEnd(text: string, from: number, digit: boolean): number {
+  let index = from
+  while (index < text.length && isAsciiDigit(text.charCodeAt(index)) === digit) index += 1
+  return index
+}
+
+/**
+ * Compare two runs of non-digits.
+ *
+ * The locale decides the reading order — 第/一/二 group the way a reader expects —
+ * and a raw code-unit comparison settles the case the locale calls *equal*: two
+ * names that are canonically equivalent (`e` + combining accent vs `é`) are
+ * distinct files on this side of the comparison, so the sort still has one order
+ * for them rather than leaving it to the engine.
+ * @param left - a run.
+ * @param right - another run.
  * @returns the comparator result.
  */
-function compareNames(left: string, right: string): number {
-  return left.localeCompare(right, 'zh-Hans-CN', { numeric: true })
+function compareTextRuns(left: string, right: string): number {
+  const order = left.localeCompare(right, 'zh-Hans-CN')
+  if (order !== 0 || left === right) return order
+  if (left.length !== right.length) return left.length < right.length ? -1 : 1
+  return left < right ? -1 : 1
+}
+
+/**
+ * Compare two runs of digits by value.
+ *
+ * Length after the leading zeros decides the value first, which avoids converting
+ * an arbitrarily long run to a number; equal values fall back to the shorter run,
+ * so `09` and `9` have a fixed order instead of being "equal".
+ * @param left - a digit run.
+ * @param right - another digit run.
+ * @returns the comparator result.
+ */
+function compareDigitRuns(left: string, right: string): number {
+  const a = left.replace(/^0+/, '')
+  const b = right.replace(/^0+/, '')
+  if (a.length !== b.length) return a.length < b.length ? -1 : 1
+  if (a !== b) return a < b ? -1 : 1
+  if (left.length !== right.length) return left.length < right.length ? -1 : 1
+  return 0
+}
+
+/**
+ * Map full-width digits to ASCII.
+ * @param text - a file name.
+ * @returns the name with ０-９ folded.
+ */
+function foldDigits(text: string): string {
+  let out = ''
+  for (const character of text) {
+    const code = character.charCodeAt(0)
+    out += code >= 0xff10 && code <= 0xff19 ? String.fromCharCode(code - 0xff10 + 0x30) : character
+  }
+  return out
 }
 
 /**
@@ -133,6 +240,13 @@ export interface TreeNode {
   path: string
   /** True for a directory, false for a file. */
   directory: boolean
+  /**
+   * True for a file the editor cannot open.
+   *
+   * The tree lists it anyway — a hidden file is indistinguishable from a lost one —
+   * and the row says so (`不可预览`) instead of pretending the click will work.
+   */
+  binary: boolean
   /** File size in bytes; `0` for a directory. */
   bytes: number
   children: TreeNode[]
@@ -167,7 +281,7 @@ export function buildTree(files: readonly ProjectFileEntry[]): TreeNode[] {
           prefix = prefix === '' ? segment : `${prefix}/${segment}`
           let next = directories.get(prefix)
           if (next === undefined) {
-            next = { name: segment, path: prefix, directory: true, bytes: 0, children: [] }
+            next = { name: segment, path: prefix, directory: true, binary: false, bytes: 0, children: [] }
             directories.set(prefix, next)
             siblings.push(next)
           }
@@ -184,13 +298,20 @@ export function buildTree(files: readonly ProjectFileEntry[]): TreeNode[] {
 
   for (const entry of files) {
     if (entry.kind !== 'directory') continue
-    const node: TreeNode = { name: entry.name, path: entry.path, directory: true, bytes: 0, children: [] }
+    const node: TreeNode = { name: entry.name, path: entry.path, directory: true, binary: false, bytes: 0, children: [] }
     directories.set(entry.path, node)
     attach(node)
   }
   for (const entry of files) {
     if (entry.kind === 'directory') continue
-    attach({ name: entry.name, path: entry.path, directory: false, bytes: entry.bytes, children: [] })
+    attach({
+      name: entry.name,
+      path: entry.path,
+      directory: false,
+      binary: entry.kind === 'binary',
+      bytes: entry.bytes,
+      children: [],
+    })
   }
 
   const sortLevel = (nodes: TreeNode[]): void => {

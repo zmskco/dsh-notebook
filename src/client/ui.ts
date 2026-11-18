@@ -173,6 +173,21 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 .dsh-notebook-warnTitle{color:var(--dsw-alias-state-warn-primary);font-size:12px;font-weight:600}
 .dsh-notebook-warnBody{margin:0;white-space:pre-wrap;font-size:11.5px;line-height:1.6;color:var(--dsw-alias-label-secondary)}
 .dsh-notebook-empty{flex:1;padding:24px 16px;color:var(--dsw-alias-label-secondary);font-size:12.5px}
+/* A row whose file the editor cannot open. The row stays — a hidden file reads as a
+   lost file — but the name is quieter and its right-hand note says why, so the
+   click is explained before it happens. */
+.dsh-notebook-item[data-binary="true"] .dsh-notebook-itemName{color:var(--dsw-alias-label-secondary)}
+.dsh-notebook-item[data-binary="true"] .dsh-notebook-count{font-variant-numeric:tabular-nums}
+/* The page that takes the click's place when the chosen file cannot be previewed.
+   It is not an error: nothing failed, the format is simply not one the page draws. */
+.dsh-notebook-notice{border:1px solid var(--dsw-alias-state-warn-primary);border-radius:6px;background:var(--dsw-alias-bg-layer-1);padding:9px 11px;display:flex;flex-direction:column;gap:4px}
+.dsh-notebook-unsupportedTitle{font-size:12.5px;font-weight:600;color:var(--dsw-alias-state-warn-primary)}
+.dsh-notebook-unsupportedBody{font-size:12px;line-height:1.65;color:var(--dsw-alias-label-secondary);max-width:52ch;overflow-wrap:anywhere}
+.dsh-notebook-unsupportedPath{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}
+/* The tree stopped at the Host's entry cap: a band above the list, not a modal —
+   the rows below are still usable. */
+.dsh-notebook-truncated{flex:none;padding:7px 12px;border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1)}
+.dsh-notebook-truncated .dsh-notebook-warnTitle{color:var(--dsw-alias-state-warn-primary);margin-bottom:2px}
 /* The delete confirmation: the panel's only modal, because it guards the only
    operation typing cannot undo. The scrim is the paper darkened rather than a black
    veil, so the panel does not flash to grey on a dark paper. */

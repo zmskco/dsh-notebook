@@ -63,6 +63,22 @@ function createFs(rootDir) {
     async readText(target) {
       return await readFile(key(target), 'utf8')
     },
+    /**
+     * The byte window the tree sniffs.
+     *
+     * The store asks for the first few kilobytes of an unknown-extension file to
+     * decide whether it is text, so the stand-in has to serve a window rather than
+     * the whole file: `readBytes` and `readByteRange` differ in exactly that, and a
+     * fake that only implements the former would make the listing take a path the
+     * real provider does not have.
+     */
+    async readByteRange(target, range) {
+      const info = await stat(key(target)).catch(() => undefined)
+      if (info === undefined) throw Object.assign(new Error('missing'), { code: 'FS_NOT_FOUND' })
+      if (!info.isFile()) throw Object.assign(new Error('not a regular file'), { code: 'FS_NOT_REGULAR_FILE' })
+      const raw = await readFile(key(target))
+      return raw.subarray(range.offset, range.offset + range.length)
+    },
     async writeText(target, content) {
       await mkdir(dirname(key(target)), { recursive: true })
       await writeFile(key(target), content, 'utf8')
@@ -264,7 +280,10 @@ try {
   check('the listing names the files and folders',
     ['手稿', '素材.md', '数据.json', '手稿-2', '笔记', '笔记/第一则'].every((path) => listing.body.files.some((entry) => entry.path === path)),
     listing.body.files.map((entry) => entry.path).join(','))
-  check('the listing is sorted as the panel expects',
+  check('the listing comes back in a stable numeric order',
+    // The panel sorts again by name (that rule is `compareNames` in the Client, and
+    // `check:client` drives it directly); this is only that the wire order is not
+    // random, so two reads of an unchanged tree agree.
     listing.body.files.map((entry) => entry.path).join(',')
       === [...listing.body.files].map((entry) => entry.path).sort((left, right) => left.localeCompare(right, 'zh-Hans-CN', { numeric: true })).join(','),
     listing.body.files.map((entry) => entry.path).join(','))
@@ -278,7 +297,65 @@ try {
   const missing = await call('file', { params: { project: '', path: '不存在' } })
   check('a missing file is a 404', missing.status === 404, String(missing.status))
   const binary = await call('save-file', { body: { project: '', path: '图.png', content: 'x' } })
-  check('an extension the editor cannot write is a 400', binary.status === 400, String(binary.status))
+  check('a binary type cannot be written', binary.status === 400, String(binary.status))
+
+  // --- what the tree lists ---------------------------------------------------------
+  // The tree used to be a short extension allowlist, then a "text only" filter. Both
+  // hid files the filesystem has, and "my file is not there" is the report that
+  // produces. Now **everything** is listed; a file the editor cannot open arrives as
+  // `kind: 'binary'` so the panel can explain instead of hiding it.
+  await writeFile(join(root, '工具.js'), 'export const add = (a, b) => a + b\n', 'utf8')
+  await writeFile(join(root, '脚本.py'), 'print("hi")\n', 'utf8')
+  await writeFile(join(root, '说明.unknownext'), '这只是一段普通文字。\n', 'utf8')
+  await writeFile(join(root, '二进制.unknownext'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x1a, 0x0a]), 'binary')
+  await writeFile(join(root, '照片.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), 'binary')
+  await writeFile(join(root, '.gitignore'), 'node_modules\n', 'utf8')
+  const wide = await call('files', { params: { project: '' } })
+  const paths = wide.body.files.map((entry) => entry.path)
+  const entryOf = (path) => wide.body.files.find((entry) => entry.path === path)
+  check('a source file is listed as text',
+    entryOf('工具.js')?.kind === 'text' && entryOf('脚本.py')?.kind === 'text',
+    JSON.stringify([entryOf('工具.js'), entryOf('脚本.py')]))
+  check('a file whose type the panel does not know is listed when its bytes are text',
+    entryOf('说明.unknownext')?.kind === 'text', JSON.stringify(entryOf('说明.unknownext')))
+  check('a file that cannot be previewed is listed, marked as binary, not hidden',
+    // The reported bug: a folder holding an image looked like a folder holding
+    // nothing. The row exists and says what it is.
+    entryOf('照片.png')?.kind === 'binary' && entryOf('二进制.unknownext')?.kind === 'binary',
+    JSON.stringify([entryOf('照片.png'), entryOf('二进制.unknownext')]))
+  check('a dotfile is listed like any other file',
+    entryOf('.gitignore')?.kind === 'text', JSON.stringify(entryOf('.gitignore')))
+  check('the listing reports whether it was cut off',
+    wide.body.truncated === false, JSON.stringify(wide.body.truncated))
+  // A deep tree is the other way a listing comes back partial: files exist past the
+  // depth cap, and a listing that stops there without saying so looks complete.
+  let deep = root
+  for (let level = 0; level < 14; level += 1) {
+    deep = join(deep, `层${String(level)}`)
+    await mkdir(deep, { recursive: true })
+  }
+  await writeFile(join(deep, '太深.md'), '# 太深\n', 'utf8')
+  const deepListing = await call('files', { params: { project: '' } })
+  check('a tree deeper than the walk reaches is reported as partial',
+    deepListing.body.truncated === true
+    && !deepListing.body.files.some((entry) => entry.path.endsWith('太深.md')),
+    JSON.stringify(deepListing.body.truncated))
+  const opened = await call('file', { params: { project: '', path: '工具.js' } })
+  check('a listed source file opens as text',
+    opened.status === 200 && opened.body.content.includes('export const add'), JSON.stringify(opened.status))
+  const sniffed = await call('file', { params: { project: '', path: '说明.unknownext' } })
+  check('an unknown type opens because its bytes are text',
+    sniffed.status === 200 && sniffed.body.content.includes('普通文字'), JSON.stringify(sniffed.status))
+  const refused = await call('file', { params: { project: '', path: '二进制.unknownext' } })
+  check('a binary opens as a 400, not as mojibake',
+    refused.status === 400, `${String(refused.status)} ${JSON.stringify(refused.body)}`)
+
+  // The rule the user asked for, on the wire: a digit run in a name is a number.
+  await writeFile(join(root, '9.md'), '# 9\n', 'utf8')
+  await writeFile(join(root, '10.md'), '# 10\n', 'utf8')
+  const numbered = await call('files', { params: { project: '' } })
+  const order = numbered.body.files.map((entry) => entry.path).filter((path) => /^\d+\.md$/.test(path))
+  check('9.md is listed before 10.md', order.join(',') === '9.md,10.md', order.join(','))
 
   // --- paths that must never leave the workspace -----------------------------------
   const escape = await call('save-file', { body: { project: '', path: '../escape.txt', content: 'x' } })

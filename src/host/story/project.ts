@@ -23,15 +23,26 @@ import type { FsDirEntry, FsService, FsTarget, SandboxExecutionPolicy } from '..
 import { NotebookError, asNotebookError } from '../errors.js'
 import { assertPathName, assertRelativePath } from './paths.js'
 import type { FileDocument, ProjectFileEntry } from '../types.js'
-import { countChars, isMissing, isTextFile, MAX_TREE_DEPTH, MAX_TREE_ENTRIES } from './manuscript.js'
+import { countChars, classifyFileName, isMissing, isProbablyText, MAX_TREE_DEPTH, MAX_TREE_ENTRIES, SNIFF_BYTES } from './manuscript.js'
 
 /**
- * Directories the tree never descends into.
+ * Directory names the tree never descends into.
  *
- * `node_modules` is not writing, and a workspace-sized tree that walked it would
- * spend seconds per listing and push the author's own files past the entry cap.
+ * These are the two trees that are not the author's work and are large enough to
+ * bury it: version-control internals and installed packages. Everything else is
+ * listed — including dotfiles and dot-folders — because a tree that hides a file
+ * the filesystem has is a tree the user cannot trust.
  */
-const SKIP_DIRS = new Set(['node_modules'])
+const SKIP_DIRS = new Set(['.git', '.hg', '.svn', 'node_modules'])
+
+/**
+ * How many unknown-extension files one listing may sniff.
+ *
+ * A workspace can hold thousands of extensionless blobs, and the tree is drawn on
+ * every page load; this keeps that bounded while still covering the normal case —
+ * a repository whose files are simply extensions this build has never heard of.
+ */
+const MAX_SNIFFS_PER_LISTING = 400
 
 /** A root that has been resolved and proven to be a directory. */
 export interface OpenRoot {
@@ -151,16 +162,35 @@ export class ProjectStore {
   /**
    * List every file and directory under the root.
    *
-   * Dot entries are tooling rather than notes (`.git`), `node_modules` is not
-   * writing, and unknown extensions are hidden: a file the tree cannot open is
-   * noise in a list whose purpose is to be clicked.
+   * **Everything is listed.** Dot entries are files and folders like any other
+   * (`.gitignore`, `.vscode/`), so they are listed too; only the two tool trees
+   * that are not the author's work — version-control internals and installed
+   * packages — are skipped, because they would bury the workspace instead of
+   * describing it. A file the editor cannot open is still listed, as `binary`:
+   * the panel explains on click why it cannot be previewed, which is an answer a
+   * reader can act on, while a missing row is indistinguishable from a lost file.
+   *
+   * Sniffing is for classification, not for filtering, and is bounded per listing:
+   * a workspace of thousands of extensionless blobs would otherwise open thousands
+   * of files to draw one tree. Past the budget an unknown type is labelled `text`
+   * — the panel's read decides for real, and a mislabel costs one explanatory
+   * message rather than a hidden file.
    * @param project - an opened root.
-   * @returns the entries, sorted by path.
+   * @returns the entries, sorted by path, and whether the walk hit its cap.
    */
-  async listFiles(project: OpenRoot): Promise<ProjectFileEntry[]> {
+  async listFiles(project: OpenRoot): Promise<{ files: ProjectFileEntry[]; truncated: boolean }> {
     const out: ProjectFileEntry[] = []
+    // Shared by the whole walk: one budget per listing, not per directory.
+    let sniffs = MAX_SNIFFS_PER_LISTING
+    let truncated = false
     const walk = async (dir: FsTarget, relDir: string, depth: number): Promise<void> => {
-      if (depth > MAX_TREE_DEPTH || out.length >= MAX_TREE_ENTRIES) return
+      // Both guards are *partial* listings, not a complete one: nesting past the
+      // depth cap or entries past the count cap means files exist that this answer
+      // does not contain, and the panel has to be able to say so.
+      if (depth > MAX_TREE_DEPTH) {
+        truncated = true
+        return
+      }
       let entries: FsDirEntry[]
       try {
         entries = await this.fs.listDir(dir)
@@ -169,8 +199,10 @@ export class ProjectStore {
         return
       }
       for (const entry of entries) {
-        if (out.length >= MAX_TREE_ENTRIES) return
-        if (entry.name.startsWith('.')) continue
+        if (out.length >= MAX_TREE_ENTRIES) {
+          truncated = true
+          return
+        }
         if (entry.type === 'directory' && SKIP_DIRS.has(entry.name)) continue
         // Re-checked per child rather than trusting the walk, so a symlink
         // pointing out of the root cannot smuggle an outside file in.
@@ -182,16 +214,45 @@ export class ProjectStore {
           continue
         }
         if (entry.type !== 'file') continue
-        if (!isTextFile(entry.name)) continue
         const size = entry.size ?? (await this.fs.stat(entry.target).catch(() => undefined))?.size ?? 0
-        out.push({ path: rel, name: entry.name, bytes: size, kind: 'text' })
+        const classified = classifyFileName(entry.name)
+        let kind: 'text' | 'binary' = 'text'
+        if (classified === 'binary') {
+          kind = 'binary'
+        } else if (classified === 'unknown' && sniffs > 0) {
+          // An unknown type is decided by its bytes — but listed either way.
+          sniffs -= 1
+          kind = (await this.looksText(entry.target)) ? 'text' : 'binary'
+        }
+        out.push({ path: rel, name: entry.name, bytes: size, kind })
       }
     }
     await walk(project.dir, '', 0)
     // `numeric` so 第2章 sorts before 第10章 rather than after it, and Chinese
-    // collation so the folder names group the way a reader expects.
+    // collation so the folder names group the way a reader expects. The panel sorts
+    // the tree again by name (`state/file-tree`), which is the order the reader
+    // sees; this one only keeps the wire format predictable.
     out.sort((left, right) => left.path.localeCompare(right.path, 'zh-Hans-CN', { numeric: true }))
-    return out
+    return { files: out, truncated }
+  }
+
+  /**
+   * Decide by content whether an unknown-extension file is text.
+   *
+   * The window is a few kilobytes rather than the file: a 1 GiB blob must not be
+   * read to draw a row. A read that is refused is treated as text — the refusal
+   * says this session may not read the file, not that it is binary, and the open
+   * will report the real error at the call site.
+   * @param target - the resolved file.
+   * @returns true when its first bytes look like text.
+   */
+  private async looksText(target: FsTarget): Promise<boolean> {
+    try {
+      const head = await this.fs.readByteRange(target, { offset: 0, length: SNIFF_BYTES })
+      return isProbablyText(head)
+    } catch {
+      return true
+    }
   }
 
   /**
@@ -199,13 +260,19 @@ export class ProjectStore {
    * @param project - an opened root.
    * @param rel - project-relative POSIX path.
    * @returns the document.
-   * @throws {NotebookError} `bad-request` when the extension is not editable text,
-   *   `not-found` when the file is absent.
+   * @throws {NotebookError} `bad-request` when the file is binary, `not-found` when
+   *   it is absent.
    */
   async readTextFile(project: OpenRoot, rel: string): Promise<FileDocument> {
     const safe = assertRelativePath(rel)
-    if (!isTextFile(safe)) throw new NotebookError('bad-request', `${safe} is not a text file this editor opens`)
+    const kind = classifyFileName(safe)
+    if (kind === 'binary') throw new NotebookError('bad-request', `${safe} is a binary file this editor does not open`)
     const target = await this.resolveInside(project, safe)
+    // An extension the editor does not know is opened unless its bytes say
+    // otherwise — that is the whole point of listing those files.
+    if (kind === 'unknown' && !(await this.looksText(target))) {
+      throw new NotebookError('bad-request', `${safe} is a binary file this editor does not open`)
+    }
     let content: string
     try {
       content = await this.fs.readText(target)
@@ -222,11 +289,11 @@ export class ProjectStore {
    * @param rel - project-relative POSIX path.
    * @param content - the full new contents.
    * @returns the stored document.
-   * @throws {NotebookError} `bad-request` when the extension is not editable text.
+   * @throws {NotebookError} `bad-request` when the name is a binary type.
    */
   async writeTextFile(project: OpenRoot, rel: string, content: string): Promise<FileDocument> {
     const safe = assertRelativePath(rel)
-    if (!isTextFile(safe)) throw new NotebookError('bad-request', `${safe} is not a text file this editor writes`)
+    if (classifyFileName(safe) === 'binary') throw new NotebookError('bad-request', `${safe} is a binary file this editor does not write`)
     await this.ensureParent(project, safe)
     const target = await this.resolveInside(project, safe)
     try {

@@ -140,7 +140,11 @@ export function registerApi(deps: ApiDeps): () => Promise<void> {
         }
         case 'files': {
           const { store, project } = await open(url.searchParams.get('project'))
-          return json({ project: project.id, files: await store.listFiles(project) })
+          // `truncated` travels with the listing: the tree stops at an entry cap,
+          // and a capped list reported as a complete one would have the panel show
+          // a folder as empty when it is only large.
+          const listing = await store.listFiles(project)
+          return json({ project: project.id, files: listing.files, truncated: listing.truncated })
         }
         case 'file': {
           const { store, project } = await open(url.searchParams.get('project'))

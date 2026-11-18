@@ -8,530 +8,824 @@
 
 import icon0 from '../../../assets/material-icons/icons/agent.svg'
 import icon1 from '../../../assets/material-icons/icons/amplify.svg'
-import icon2 from '../../../assets/material-icons/icons/angular.svg'
-import icon3 from '../../../assets/material-icons/icons/appveyor.svg'
-import icon4 from '../../../assets/material-icons/icons/appwrite.svg'
-import icon5 from '../../../assets/material-icons/icons/architecture.svg'
-import icon6 from '../../../assets/material-icons/icons/aurelia.svg'
-import icon7 from '../../../assets/material-icons/icons/authors.svg'
-import icon8 from '../../../assets/material-icons/icons/auto.svg'
-import icon9 from '../../../assets/material-icons/icons/azure-pipelines.svg'
-import icon10 from '../../../assets/material-icons/icons/babel.svg'
-import icon11 from '../../../assets/material-icons/icons/bashly.svg'
-import icon12 from '../../../assets/material-icons/icons/bashly-settings.svg'
-import icon13 from '../../../assets/material-icons/icons/bashly-strings.svg'
-import icon14 from '../../../assets/material-icons/icons/biome.svg'
-import icon15 from '../../../assets/material-icons/icons/bitbucket.svg'
-import icon16 from '../../../assets/material-icons/icons/bower.svg'
-import icon17 from '../../../assets/material-icons/icons/buildkite.svg'
-import icon18 from '../../../assets/material-icons/icons/capacitor.svg'
-import icon19 from '../../../assets/material-icons/icons/changelog.svg'
-import icon20 from '../../../assets/material-icons/icons/chromatic.svg'
-import icon21 from '../../../assets/material-icons/icons/circleci.svg'
-import icon22 from '../../../assets/material-icons/icons/claude.svg'
-import icon23 from '../../../assets/material-icons/icons/cmake.svg'
-import icon24 from '../../../assets/material-icons/icons/codecov.svg'
-import icon25 from '../../../assets/material-icons/icons/commitizen.svg'
-import icon26 from '../../../assets/material-icons/icons/commitlint.svg'
-import icon27 from '../../../assets/material-icons/icons/concourse.svg'
-import icon28 from '../../../assets/material-icons/icons/conduct.svg'
-import icon29 from '../../../assets/material-icons/icons/contributing.svg'
-import icon30 from '../../../assets/material-icons/icons/copilot.svg'
-import icon31 from '../../../assets/material-icons/icons/craco.svg'
-import icon32 from '../../../assets/material-icons/icons/credits.svg'
-import icon33 from '../../../assets/material-icons/icons/cypress.svg'
-import icon34 from '../../../assets/material-icons/icons/deno.svg'
-import icon35 from '../../../assets/material-icons/icons/dependabot.svg'
-import icon36 from '../../../assets/material-icons/icons/docker.svg'
-import icon37 from '../../../assets/material-icons/icons/document.svg'
-import icon38 from '../../../assets/material-icons/icons/drizzle.svg'
-import icon39 from '../../../assets/material-icons/icons/eslint.svg'
-import icon40 from '../../../assets/material-icons/icons/excalidraw.svg'
-import icon41 from '../../../assets/material-icons/icons/expo.svg'
-import icon42 from '../../../assets/material-icons/icons/file.svg'
-import icon43 from '../../../assets/material-icons/icons/firebase.svg'
-import icon44 from '../../../assets/material-icons/icons/folder.svg'
-import icon45 from '../../../assets/material-icons/icons/folder-android.svg'
-import icon46 from '../../../assets/material-icons/icons/folder-android-open.svg'
-import icon47 from '../../../assets/material-icons/icons/folder-api.svg'
-import icon48 from '../../../assets/material-icons/icons/folder-api-open.svg'
-import icon49 from '../../../assets/material-icons/icons/folder-app.svg'
-import icon50 from '../../../assets/material-icons/icons/folder-app-open.svg'
-import icon51 from '../../../assets/material-icons/icons/folder-audio.svg'
-import icon52 from '../../../assets/material-icons/icons/folder-audio-open.svg'
-import icon53 from '../../../assets/material-icons/icons/folder-backup.svg'
-import icon54 from '../../../assets/material-icons/icons/folder-backup-open.svg'
-import icon55 from '../../../assets/material-icons/icons/folder-client.svg'
-import icon56 from '../../../assets/material-icons/icons/folder-client-open.svg'
-import icon57 from '../../../assets/material-icons/icons/folder-components.svg'
-import icon58 from '../../../assets/material-icons/icons/folder-components-open.svg'
-import icon59 from '../../../assets/material-icons/icons/folder-config.svg'
-import icon60 from '../../../assets/material-icons/icons/folder-config-open.svg'
-import icon61 from '../../../assets/material-icons/icons/folder-content.svg'
-import icon62 from '../../../assets/material-icons/icons/folder-content-open.svg'
-import icon63 from '../../../assets/material-icons/icons/folder-core.svg'
-import icon64 from '../../../assets/material-icons/icons/folder-core-open.svg'
-import icon65 from '../../../assets/material-icons/icons/folder-coverage.svg'
-import icon66 from '../../../assets/material-icons/icons/folder-coverage-open.svg'
-import icon67 from '../../../assets/material-icons/icons/folder-css.svg'
-import icon68 from '../../../assets/material-icons/icons/folder-css-open.svg'
-import icon69 from '../../../assets/material-icons/icons/folder-database.svg'
-import icon70 from '../../../assets/material-icons/icons/folder-database-open.svg'
-import icon71 from '../../../assets/material-icons/icons/folder-dist.svg'
-import icon72 from '../../../assets/material-icons/icons/folder-dist-open.svg'
-import icon73 from '../../../assets/material-icons/icons/folder-docs.svg'
-import icon74 from '../../../assets/material-icons/icons/folder-docs-open.svg'
-import icon75 from '../../../assets/material-icons/icons/folder-examples.svg'
-import icon76 from '../../../assets/material-icons/icons/folder-examples-open.svg'
-import icon77 from '../../../assets/material-icons/icons/folder-font.svg'
-import icon78 from '../../../assets/material-icons/icons/folder-font-open.svg'
-import icon79 from '../../../assets/material-icons/icons/folder-git.svg'
-import icon80 from '../../../assets/material-icons/icons/folder-git-open.svg'
-import icon81 from '../../../assets/material-icons/icons/folder-github.svg'
-import icon82 from '../../../assets/material-icons/icons/folder-github-open.svg'
-import icon83 from '../../../assets/material-icons/icons/folder-gitlab.svg'
-import icon84 from '../../../assets/material-icons/icons/folder-gitlab-open.svg'
-import icon85 from '../../../assets/material-icons/icons/folder-hook.svg'
-import icon86 from '../../../assets/material-icons/icons/folder-hook-open.svg'
-import icon87 from '../../../assets/material-icons/icons/folder-i18n.svg'
-import icon88 from '../../../assets/material-icons/icons/folder-i18n-open.svg'
-import icon89 from '../../../assets/material-icons/icons/folder-images.svg'
-import icon90 from '../../../assets/material-icons/icons/folder-images-open.svg'
-import icon91 from '../../../assets/material-icons/icons/folder-include.svg'
-import icon92 from '../../../assets/material-icons/icons/folder-include-open.svg'
-import icon93 from '../../../assets/material-icons/icons/folder-ios.svg'
-import icon94 from '../../../assets/material-icons/icons/folder-ios-open.svg'
-import icon95 from '../../../assets/material-icons/icons/folder-jupyter.svg'
-import icon96 from '../../../assets/material-icons/icons/folder-jupyter-open.svg'
-import icon97 from '../../../assets/material-icons/icons/folder-layout.svg'
-import icon98 from '../../../assets/material-icons/icons/folder-layout-open.svg'
-import icon99 from '../../../assets/material-icons/icons/folder-lib.svg'
-import icon100 from '../../../assets/material-icons/icons/folder-lib-open.svg'
-import icon101 from '../../../assets/material-icons/icons/folder-linux.svg'
-import icon102 from '../../../assets/material-icons/icons/folder-linux-open.svg'
-import icon103 from '../../../assets/material-icons/icons/folder-macos.svg'
-import icon104 from '../../../assets/material-icons/icons/folder-macos-open.svg'
-import icon105 from '../../../assets/material-icons/icons/folder-markdown.svg'
-import icon106 from '../../../assets/material-icons/icons/folder-markdown-open.svg'
-import icon107 from '../../../assets/material-icons/icons/folder-mobile.svg'
-import icon108 from '../../../assets/material-icons/icons/folder-mobile-open.svg'
-import icon109 from '../../../assets/material-icons/icons/folder-node.svg'
-import icon110 from '../../../assets/material-icons/icons/folder-node-open.svg'
-import icon111 from '../../../assets/material-icons/icons/folder-open.svg'
-import icon112 from '../../../assets/material-icons/icons/folder-packages.svg'
-import icon113 from '../../../assets/material-icons/icons/folder-packages-open.svg'
-import icon114 from '../../../assets/material-icons/icons/folder-plugin.svg'
-import icon115 from '../../../assets/material-icons/icons/folder-plugin-open.svg'
-import icon116 from '../../../assets/material-icons/icons/folder-public.svg'
-import icon117 from '../../../assets/material-icons/icons/folder-public-open.svg'
-import icon118 from '../../../assets/material-icons/icons/folder-resource.svg'
-import icon119 from '../../../assets/material-icons/icons/folder-resource-open.svg'
-import icon120 from '../../../assets/material-icons/icons/folder-routes.svg'
-import icon121 from '../../../assets/material-icons/icons/folder-routes-open.svg'
-import icon122 from '../../../assets/material-icons/icons/folder-scripts.svg'
-import icon123 from '../../../assets/material-icons/icons/folder-scripts-open.svg'
-import icon124 from '../../../assets/material-icons/icons/folder-server.svg'
-import icon125 from '../../../assets/material-icons/icons/folder-server-open.svg'
-import icon126 from '../../../assets/material-icons/icons/folder-shared.svg'
-import icon127 from '../../../assets/material-icons/icons/folder-shared-open.svg'
-import icon128 from '../../../assets/material-icons/icons/folder-src.svg'
-import icon129 from '../../../assets/material-icons/icons/folder-src-open.svg'
-import icon130 from '../../../assets/material-icons/icons/folder-store.svg'
-import icon131 from '../../../assets/material-icons/icons/folder-store-open.svg'
-import icon132 from '../../../assets/material-icons/icons/folder-temp.svg'
-import icon133 from '../../../assets/material-icons/icons/folder-temp-open.svg'
-import icon134 from '../../../assets/material-icons/icons/folder-template.svg'
-import icon135 from '../../../assets/material-icons/icons/folder-template-open.svg'
-import icon136 from '../../../assets/material-icons/icons/folder-test.svg'
-import icon137 from '../../../assets/material-icons/icons/folder-test-open.svg'
-import icon138 from '../../../assets/material-icons/icons/folder-theme.svg'
-import icon139 from '../../../assets/material-icons/icons/folder-theme-open.svg'
-import icon140 from '../../../assets/material-icons/icons/folder-tools.svg'
-import icon141 from '../../../assets/material-icons/icons/folder-tools-open.svg'
-import icon142 from '../../../assets/material-icons/icons/folder-typescript.svg'
-import icon143 from '../../../assets/material-icons/icons/folder-typescript-open.svg'
-import icon144 from '../../../assets/material-icons/icons/folder-utils.svg'
-import icon145 from '../../../assets/material-icons/icons/folder-utils-open.svg'
-import icon146 from '../../../assets/material-icons/icons/folder-video.svg'
-import icon147 from '../../../assets/material-icons/icons/folder-video-open.svg'
-import icon148 from '../../../assets/material-icons/icons/folder-views.svg'
-import icon149 from '../../../assets/material-icons/icons/folder-views-open.svg'
-import icon150 from '../../../assets/material-icons/icons/folder-vscode.svg'
-import icon151 from '../../../assets/material-icons/icons/folder-vscode-open.svg'
-import icon152 from '../../../assets/material-icons/icons/folder-windows.svg'
-import icon153 from '../../../assets/material-icons/icons/folder-windows-open.svg'
-import icon154 from '../../../assets/material-icons/icons/garden.svg'
-import icon155 from '../../../assets/material-icons/icons/gemini-ai.svg'
-import icon156 from '../../../assets/material-icons/icons/google.svg'
-import icon157 from '../../../assets/material-icons/icons/graphql.svg'
-import icon158 from '../../../assets/material-icons/icons/hadolint.svg'
-import icon159 from '../../../assets/material-icons/icons/horusec.svg'
-import icon160 from '../../../assets/material-icons/icons/husky.svg'
-import icon161 from '../../../assets/material-icons/icons/instructions.svg'
-import icon162 from '../../../assets/material-icons/icons/ionic.svg'
-import icon163 from '../../../assets/material-icons/icons/jest.svg'
-import icon164 from '../../../assets/material-icons/icons/jsconfig.svg'
-import icon165 from '../../../assets/material-icons/icons/json.svg'
-import icon166 from '../../../assets/material-icons/icons/jsr.svg'
-import icon167 from '../../../assets/material-icons/icons/kcl.svg'
-import icon168 from '../../../assets/material-icons/icons/knip.svg'
-import icon169 from '../../../assets/material-icons/icons/kubernetes.svg'
-import icon170 from '../../../assets/material-icons/icons/lefthook.svg'
-import icon171 from '../../../assets/material-icons/icons/lerna.svg'
-import icon172 from '../../../assets/material-icons/icons/liara.svg'
-import icon173 from '../../../assets/material-icons/icons/license.svg'
-import icon174 from '../../../assets/material-icons/icons/lighthouse.svg'
-import icon175 from '../../../assets/material-icons/icons/lock.svg'
-import icon176 from '../../../assets/material-icons/icons/markdown.svg'
-import icon177 from '../../../assets/material-icons/icons/meson.svg'
-import icon178 from '../../../assets/material-icons/icons/metro.svg'
-import icon179 from '../../../assets/material-icons/icons/minecraft-fabric.svg'
-import icon180 from '../../../assets/material-icons/icons/moon.svg'
-import icon181 from '../../../assets/material-icons/icons/nano-staged.svg'
-import icon182 from '../../../assets/material-icons/icons/nest.svg'
-import icon183 from '../../../assets/material-icons/icons/netlify.svg'
-import icon184 from '../../../assets/material-icons/icons/nodejs.svg'
-import icon185 from '../../../assets/material-icons/icons/nodemon.svg'
-import icon186 from '../../../assets/material-icons/icons/nx.svg'
-import icon187 from '../../../assets/material-icons/icons/openapi.svg'
-import icon188 from '../../../assets/material-icons/icons/opencode.svg'
-import icon189 from '../../../assets/material-icons/icons/packship.svg'
-import icon190 from '../../../assets/material-icons/icons/phpunit.svg'
-import icon191 from '../../../assets/material-icons/icons/pkl.svg'
-import icon192 from '../../../assets/material-icons/icons/pnpm.svg'
-import icon193 from '../../../assets/material-icons/icons/postcss.svg'
-import icon194 from '../../../assets/material-icons/icons/posthtml.svg'
-import icon195 from '../../../assets/material-icons/icons/prettier.svg'
-import icon196 from '../../../assets/material-icons/icons/prisma.svg'
-import icon197 from '../../../assets/material-icons/icons/puppeteer.svg'
-import icon198 from '../../../assets/material-icons/icons/python-misc.svg'
-import icon199 from '../../../assets/material-icons/icons/readme.svg'
-import icon200 from '../../../assets/material-icons/icons/renovate.svg'
-import icon201 from '../../../assets/material-icons/icons/roadmap.svg'
-import icon202 from '../../../assets/material-icons/icons/robots.svg'
-import icon203 from '../../../assets/material-icons/icons/rome.svg'
-import icon204 from '../../../assets/material-icons/icons/rstack.svg'
-import icon205 from '../../../assets/material-icons/icons/screwdriver.svg'
-import icon206 from '../../../assets/material-icons/icons/semantic-release.svg'
-import icon207 from '../../../assets/material-icons/icons/semgrep.svg'
-import icon208 from '../../../assets/material-icons/icons/serverless.svg'
-import icon209 from '../../../assets/material-icons/icons/settings.svg'
-import icon210 from '../../../assets/material-icons/icons/skill.svg'
-import icon211 from '../../../assets/material-icons/icons/snapcraft.svg'
-import icon212 from '../../../assets/material-icons/icons/snowpack.svg'
-import icon213 from '../../../assets/material-icons/icons/sonarcloud.svg'
-import icon214 from '../../../assets/material-icons/icons/steadybit.svg'
-import icon215 from '../../../assets/material-icons/icons/stryker.svg'
-import icon216 from '../../../assets/material-icons/icons/stylelint.svg'
-import icon217 from '../../../assets/material-icons/icons/svgr.svg'
-import icon218 from '../../../assets/material-icons/icons/swagger.svg'
-import icon219 from '../../../assets/material-icons/icons/syncpack.svg'
-import icon220 from '../../../assets/material-icons/icons/table.svg'
-import icon221 from '../../../assets/material-icons/icons/taskfile.svg'
-import icon222 from '../../../assets/material-icons/icons/tauri.svg'
-import icon223 from '../../../assets/material-icons/icons/todo.svg'
-import icon224 from '../../../assets/material-icons/icons/tsconfig.svg'
-import icon225 from '../../../assets/material-icons/icons/tsdoc.svg'
-import icon226 from '../../../assets/material-icons/icons/tsdown.svg'
-import icon227 from '../../../assets/material-icons/icons/turborepo.svg'
-import icon228 from '../../../assets/material-icons/icons/typedoc.svg'
-import icon229 from '../../../assets/material-icons/icons/unlicense.svg'
-import icon230 from '../../../assets/material-icons/icons/vercel.svg'
-import icon231 from '../../../assets/material-icons/icons/verdaccio.svg'
-import icon232 from '../../../assets/material-icons/icons/vlang.svg'
-import icon233 from '../../../assets/material-icons/icons/warp.svg'
-import icon234 from '../../../assets/material-icons/icons/werf.svg'
-import icon235 from '../../../assets/material-icons/icons/windicss.svg'
-import icon236 from '../../../assets/material-icons/icons/wrangler.svg'
-import icon237 from '../../../assets/material-icons/icons/xaml.svg'
-import icon238 from '../../../assets/material-icons/icons/yaml.svg'
-import icon239 from '../../../assets/material-icons/icons/zeabur.svg'
+import icon2 from '../../../assets/material-icons/icons/android.svg'
+import icon3 from '../../../assets/material-icons/icons/angular.svg'
+import icon4 from '../../../assets/material-icons/icons/apollo.svg'
+import icon5 from '../../../assets/material-icons/icons/appveyor.svg'
+import icon6 from '../../../assets/material-icons/icons/appwrite.svg'
+import icon7 from '../../../assets/material-icons/icons/architecture.svg'
+import icon8 from '../../../assets/material-icons/icons/asciidoc.svg'
+import icon9 from '../../../assets/material-icons/icons/assembly.svg'
+import icon10 from '../../../assets/material-icons/icons/astro.svg'
+import icon11 from '../../../assets/material-icons/icons/astro-config.svg'
+import icon12 from '../../../assets/material-icons/icons/aurelia.svg'
+import icon13 from '../../../assets/material-icons/icons/authors.svg'
+import icon14 from '../../../assets/material-icons/icons/auto.svg'
+import icon15 from '../../../assets/material-icons/icons/azure-pipelines.svg'
+import icon16 from '../../../assets/material-icons/icons/babel.svg'
+import icon17 from '../../../assets/material-icons/icons/bashly.svg'
+import icon18 from '../../../assets/material-icons/icons/bashly-settings.svg'
+import icon19 from '../../../assets/material-icons/icons/bashly-strings.svg'
+import icon20 from '../../../assets/material-icons/icons/biome.svg'
+import icon21 from '../../../assets/material-icons/icons/bitbucket.svg'
+import icon22 from '../../../assets/material-icons/icons/blitz.svg'
+import icon23 from '../../../assets/material-icons/icons/bower.svg'
+import icon24 from '../../../assets/material-icons/icons/buildkite.svg'
+import icon25 from '../../../assets/material-icons/icons/bun.svg'
+import icon26 from '../../../assets/material-icons/icons/c.svg'
+import icon27 from '../../../assets/material-icons/icons/capacitor.svg'
+import icon28 from '../../../assets/material-icons/icons/changelog.svg'
+import icon29 from '../../../assets/material-icons/icons/chromatic.svg'
+import icon30 from '../../../assets/material-icons/icons/circleci.svg'
+import icon31 from '../../../assets/material-icons/icons/claude.svg'
+import icon32 from '../../../assets/material-icons/icons/clojure.svg'
+import icon33 from '../../../assets/material-icons/icons/cmake.svg'
+import icon34 from '../../../assets/material-icons/icons/codecov.svg'
+import icon35 from '../../../assets/material-icons/icons/commitizen.svg'
+import icon36 from '../../../assets/material-icons/icons/commitlint.svg'
+import icon37 from '../../../assets/material-icons/icons/concourse.svg'
+import icon38 from '../../../assets/material-icons/icons/conduct.svg'
+import icon39 from '../../../assets/material-icons/icons/console.svg'
+import icon40 from '../../../assets/material-icons/icons/contentlayer.svg'
+import icon41 from '../../../assets/material-icons/icons/contributing.svg'
+import icon42 from '../../../assets/material-icons/icons/copilot.svg'
+import icon43 from '../../../assets/material-icons/icons/cpp.svg'
+import icon44 from '../../../assets/material-icons/icons/craco.svg'
+import icon45 from '../../../assets/material-icons/icons/credits.svg'
+import icon46 from '../../../assets/material-icons/icons/csharp.svg'
+import icon47 from '../../../assets/material-icons/icons/css.svg'
+import icon48 from '../../../assets/material-icons/icons/cypress.svg'
+import icon49 from '../../../assets/material-icons/icons/dart.svg'
+import icon50 from '../../../assets/material-icons/icons/database.svg'
+import icon51 from '../../../assets/material-icons/icons/deno.svg'
+import icon52 from '../../../assets/material-icons/icons/dependabot.svg'
+import icon53 from '../../../assets/material-icons/icons/diff.svg'
+import icon54 from '../../../assets/material-icons/icons/docker.svg'
+import icon55 from '../../../assets/material-icons/icons/document.svg'
+import icon56 from '../../../assets/material-icons/icons/drizzle.svg'
+import icon57 from '../../../assets/material-icons/icons/elixir.svg'
+import icon58 from '../../../assets/material-icons/icons/elm.svg'
+import icon59 from '../../../assets/material-icons/icons/ember.svg'
+import icon60 from '../../../assets/material-icons/icons/erlang.svg'
+import icon61 from '../../../assets/material-icons/icons/esbuild.svg'
+import icon62 from '../../../assets/material-icons/icons/eslint.svg'
+import icon63 from '../../../assets/material-icons/icons/excalidraw.svg'
+import icon64 from '../../../assets/material-icons/icons/expo.svg'
+import icon65 from '../../../assets/material-icons/icons/file.svg'
+import icon66 from '../../../assets/material-icons/icons/firebase.svg'
+import icon67 from '../../../assets/material-icons/icons/folder.svg'
+import icon68 from '../../../assets/material-icons/icons/folder-android.svg'
+import icon69 from '../../../assets/material-icons/icons/folder-android-open.svg'
+import icon70 from '../../../assets/material-icons/icons/folder-api.svg'
+import icon71 from '../../../assets/material-icons/icons/folder-api-open.svg'
+import icon72 from '../../../assets/material-icons/icons/folder-app.svg'
+import icon73 from '../../../assets/material-icons/icons/folder-app-open.svg'
+import icon74 from '../../../assets/material-icons/icons/folder-audio.svg'
+import icon75 from '../../../assets/material-icons/icons/folder-audio-open.svg'
+import icon76 from '../../../assets/material-icons/icons/folder-backup.svg'
+import icon77 from '../../../assets/material-icons/icons/folder-backup-open.svg'
+import icon78 from '../../../assets/material-icons/icons/folder-client.svg'
+import icon79 from '../../../assets/material-icons/icons/folder-client-open.svg'
+import icon80 from '../../../assets/material-icons/icons/folder-components.svg'
+import icon81 from '../../../assets/material-icons/icons/folder-components-open.svg'
+import icon82 from '../../../assets/material-icons/icons/folder-config.svg'
+import icon83 from '../../../assets/material-icons/icons/folder-config-open.svg'
+import icon84 from '../../../assets/material-icons/icons/folder-content.svg'
+import icon85 from '../../../assets/material-icons/icons/folder-content-open.svg'
+import icon86 from '../../../assets/material-icons/icons/folder-core.svg'
+import icon87 from '../../../assets/material-icons/icons/folder-core-open.svg'
+import icon88 from '../../../assets/material-icons/icons/folder-coverage.svg'
+import icon89 from '../../../assets/material-icons/icons/folder-coverage-open.svg'
+import icon90 from '../../../assets/material-icons/icons/folder-css.svg'
+import icon91 from '../../../assets/material-icons/icons/folder-css-open.svg'
+import icon92 from '../../../assets/material-icons/icons/folder-database.svg'
+import icon93 from '../../../assets/material-icons/icons/folder-database-open.svg'
+import icon94 from '../../../assets/material-icons/icons/folder-dist.svg'
+import icon95 from '../../../assets/material-icons/icons/folder-dist-open.svg'
+import icon96 from '../../../assets/material-icons/icons/folder-docs.svg'
+import icon97 from '../../../assets/material-icons/icons/folder-docs-open.svg'
+import icon98 from '../../../assets/material-icons/icons/folder-examples.svg'
+import icon99 from '../../../assets/material-icons/icons/folder-examples-open.svg'
+import icon100 from '../../../assets/material-icons/icons/folder-font.svg'
+import icon101 from '../../../assets/material-icons/icons/folder-font-open.svg'
+import icon102 from '../../../assets/material-icons/icons/folder-git.svg'
+import icon103 from '../../../assets/material-icons/icons/folder-git-open.svg'
+import icon104 from '../../../assets/material-icons/icons/folder-github.svg'
+import icon105 from '../../../assets/material-icons/icons/folder-github-open.svg'
+import icon106 from '../../../assets/material-icons/icons/folder-gitlab.svg'
+import icon107 from '../../../assets/material-icons/icons/folder-gitlab-open.svg'
+import icon108 from '../../../assets/material-icons/icons/folder-hook.svg'
+import icon109 from '../../../assets/material-icons/icons/folder-hook-open.svg'
+import icon110 from '../../../assets/material-icons/icons/folder-i18n.svg'
+import icon111 from '../../../assets/material-icons/icons/folder-i18n-open.svg'
+import icon112 from '../../../assets/material-icons/icons/folder-images.svg'
+import icon113 from '../../../assets/material-icons/icons/folder-images-open.svg'
+import icon114 from '../../../assets/material-icons/icons/folder-include.svg'
+import icon115 from '../../../assets/material-icons/icons/folder-include-open.svg'
+import icon116 from '../../../assets/material-icons/icons/folder-ios.svg'
+import icon117 from '../../../assets/material-icons/icons/folder-ios-open.svg'
+import icon118 from '../../../assets/material-icons/icons/folder-jupyter.svg'
+import icon119 from '../../../assets/material-icons/icons/folder-jupyter-open.svg'
+import icon120 from '../../../assets/material-icons/icons/folder-layout.svg'
+import icon121 from '../../../assets/material-icons/icons/folder-layout-open.svg'
+import icon122 from '../../../assets/material-icons/icons/folder-lib.svg'
+import icon123 from '../../../assets/material-icons/icons/folder-lib-open.svg'
+import icon124 from '../../../assets/material-icons/icons/folder-linux.svg'
+import icon125 from '../../../assets/material-icons/icons/folder-linux-open.svg'
+import icon126 from '../../../assets/material-icons/icons/folder-macos.svg'
+import icon127 from '../../../assets/material-icons/icons/folder-macos-open.svg'
+import icon128 from '../../../assets/material-icons/icons/folder-markdown.svg'
+import icon129 from '../../../assets/material-icons/icons/folder-markdown-open.svg'
+import icon130 from '../../../assets/material-icons/icons/folder-mobile.svg'
+import icon131 from '../../../assets/material-icons/icons/folder-mobile-open.svg'
+import icon132 from '../../../assets/material-icons/icons/folder-node.svg'
+import icon133 from '../../../assets/material-icons/icons/folder-node-open.svg'
+import icon134 from '../../../assets/material-icons/icons/folder-open.svg'
+import icon135 from '../../../assets/material-icons/icons/folder-packages.svg'
+import icon136 from '../../../assets/material-icons/icons/folder-packages-open.svg'
+import icon137 from '../../../assets/material-icons/icons/folder-plugin.svg'
+import icon138 from '../../../assets/material-icons/icons/folder-plugin-open.svg'
+import icon139 from '../../../assets/material-icons/icons/folder-public.svg'
+import icon140 from '../../../assets/material-icons/icons/folder-public-open.svg'
+import icon141 from '../../../assets/material-icons/icons/folder-resource.svg'
+import icon142 from '../../../assets/material-icons/icons/folder-resource-open.svg'
+import icon143 from '../../../assets/material-icons/icons/folder-routes.svg'
+import icon144 from '../../../assets/material-icons/icons/folder-routes-open.svg'
+import icon145 from '../../../assets/material-icons/icons/folder-scripts.svg'
+import icon146 from '../../../assets/material-icons/icons/folder-scripts-open.svg'
+import icon147 from '../../../assets/material-icons/icons/folder-server.svg'
+import icon148 from '../../../assets/material-icons/icons/folder-server-open.svg'
+import icon149 from '../../../assets/material-icons/icons/folder-shared.svg'
+import icon150 from '../../../assets/material-icons/icons/folder-shared-open.svg'
+import icon151 from '../../../assets/material-icons/icons/folder-src.svg'
+import icon152 from '../../../assets/material-icons/icons/folder-src-open.svg'
+import icon153 from '../../../assets/material-icons/icons/folder-store.svg'
+import icon154 from '../../../assets/material-icons/icons/folder-store-open.svg'
+import icon155 from '../../../assets/material-icons/icons/folder-temp.svg'
+import icon156 from '../../../assets/material-icons/icons/folder-temp-open.svg'
+import icon157 from '../../../assets/material-icons/icons/folder-template.svg'
+import icon158 from '../../../assets/material-icons/icons/folder-template-open.svg'
+import icon159 from '../../../assets/material-icons/icons/folder-test.svg'
+import icon160 from '../../../assets/material-icons/icons/folder-test-open.svg'
+import icon161 from '../../../assets/material-icons/icons/folder-theme.svg'
+import icon162 from '../../../assets/material-icons/icons/folder-theme-open.svg'
+import icon163 from '../../../assets/material-icons/icons/folder-tools.svg'
+import icon164 from '../../../assets/material-icons/icons/folder-tools-open.svg'
+import icon165 from '../../../assets/material-icons/icons/folder-typescript.svg'
+import icon166 from '../../../assets/material-icons/icons/folder-typescript-open.svg'
+import icon167 from '../../../assets/material-icons/icons/folder-utils.svg'
+import icon168 from '../../../assets/material-icons/icons/folder-utils-open.svg'
+import icon169 from '../../../assets/material-icons/icons/folder-video.svg'
+import icon170 from '../../../assets/material-icons/icons/folder-video-open.svg'
+import icon171 from '../../../assets/material-icons/icons/folder-views.svg'
+import icon172 from '../../../assets/material-icons/icons/folder-views-open.svg'
+import icon173 from '../../../assets/material-icons/icons/folder-vscode.svg'
+import icon174 from '../../../assets/material-icons/icons/folder-vscode-open.svg'
+import icon175 from '../../../assets/material-icons/icons/folder-windows.svg'
+import icon176 from '../../../assets/material-icons/icons/folder-windows-open.svg'
+import icon177 from '../../../assets/material-icons/icons/fsharp.svg'
+import icon178 from '../../../assets/material-icons/icons/fusebox.svg'
+import icon179 from '../../../assets/material-icons/icons/garden.svg'
+import icon180 from '../../../assets/material-icons/icons/gatsby.svg'
+import icon181 from '../../../assets/material-icons/icons/gemini-ai.svg'
+import icon182 from '../../../assets/material-icons/icons/git.svg'
+import icon183 from '../../../assets/material-icons/icons/gleam.svg'
+import icon184 from '../../../assets/material-icons/icons/go.svg'
+import icon185 from '../../../assets/material-icons/icons/google.svg'
+import icon186 from '../../../assets/material-icons/icons/gradle.svg'
+import icon187 from '../../../assets/material-icons/icons/graphql.svg'
+import icon188 from '../../../assets/material-icons/icons/gridsome.svg'
+import icon189 from '../../../assets/material-icons/icons/groovy.svg'
+import icon190 from '../../../assets/material-icons/icons/grunt.svg'
+import icon191 from '../../../assets/material-icons/icons/gulp.svg'
+import icon192 from '../../../assets/material-icons/icons/h.svg'
+import icon193 from '../../../assets/material-icons/icons/hadolint.svg'
+import icon194 from '../../../assets/material-icons/icons/hardhat.svg'
+import icon195 from '../../../assets/material-icons/icons/harmonix.svg'
+import icon196 from '../../../assets/material-icons/icons/haskell.svg'
+import icon197 from '../../../assets/material-icons/icons/hcl.svg'
+import icon198 from '../../../assets/material-icons/icons/histoire.svg'
+import icon199 from '../../../assets/material-icons/icons/horusec.svg'
+import icon200 from '../../../assets/material-icons/icons/hpp.svg'
+import icon201 from '../../../assets/material-icons/icons/html.svg'
+import icon202 from '../../../assets/material-icons/icons/husky.svg'
+import icon203 from '../../../assets/material-icons/icons/instructions.svg'
+import icon204 from '../../../assets/material-icons/icons/ionic.svg'
+import icon205 from '../../../assets/material-icons/icons/istanbul.svg'
+import icon206 from '../../../assets/material-icons/icons/java.svg'
+import icon207 from '../../../assets/material-icons/icons/javascript.svg'
+import icon208 from '../../../assets/material-icons/icons/jest.svg'
+import icon209 from '../../../assets/material-icons/icons/jsconfig.svg'
+import icon210 from '../../../assets/material-icons/icons/json.svg'
+import icon211 from '../../../assets/material-icons/icons/jsr.svg'
+import icon212 from '../../../assets/material-icons/icons/julia.svg'
+import icon213 from '../../../assets/material-icons/icons/karma.svg'
+import icon214 from '../../../assets/material-icons/icons/kcl.svg'
+import icon215 from '../../../assets/material-icons/icons/keystatic.svg'
+import icon216 from '../../../assets/material-icons/icons/knip.svg'
+import icon217 from '../../../assets/material-icons/icons/kotlin.svg'
+import icon218 from '../../../assets/material-icons/icons/kubernetes.svg'
+import icon219 from '../../../assets/material-icons/icons/lefthook.svg'
+import icon220 from '../../../assets/material-icons/icons/lerna.svg'
+import icon221 from '../../../assets/material-icons/icons/less.svg'
+import icon222 from '../../../assets/material-icons/icons/liara.svg'
+import icon223 from '../../../assets/material-icons/icons/license.svg'
+import icon224 from '../../../assets/material-icons/icons/lighthouse.svg'
+import icon225 from '../../../assets/material-icons/icons/lintstaged.svg'
+import icon226 from '../../../assets/material-icons/icons/lock.svg'
+import icon227 from '../../../assets/material-icons/icons/log.svg'
+import icon228 from '../../../assets/material-icons/icons/lua.svg'
+import icon229 from '../../../assets/material-icons/icons/lynx.svg'
+import icon230 from '../../../assets/material-icons/icons/makefile.svg'
+import icon231 from '../../../assets/material-icons/icons/markdoc-config.svg'
+import icon232 from '../../../assets/material-icons/icons/markdown.svg'
+import icon233 from '../../../assets/material-icons/icons/maven.svg'
+import icon234 from '../../../assets/material-icons/icons/mdx.svg'
+import icon235 from '../../../assets/material-icons/icons/mercurial.svg'
+import icon236 from '../../../assets/material-icons/icons/meson.svg'
+import icon237 from '../../../assets/material-icons/icons/metro.svg'
+import icon238 from '../../../assets/material-icons/icons/minecraft-fabric.svg'
+import icon239 from '../../../assets/material-icons/icons/moon.svg'
+import icon240 from '../../../assets/material-icons/icons/nano-staged.svg'
+import icon241 from '../../../assets/material-icons/icons/nest.svg'
+import icon242 from '../../../assets/material-icons/icons/netlify.svg'
+import icon243 from '../../../assets/material-icons/icons/next.svg'
+import icon244 from '../../../assets/material-icons/icons/nginx.svg'
+import icon245 from '../../../assets/material-icons/icons/nim.svg'
+import icon246 from '../../../assets/material-icons/icons/nix.svg'
+import icon247 from '../../../assets/material-icons/icons/nodejs.svg'
+import icon248 from '../../../assets/material-icons/icons/nodemon.svg'
+import icon249 from '../../../assets/material-icons/icons/nuxt.svg'
+import icon250 from '../../../assets/material-icons/icons/nx.svg'
+import icon251 from '../../../assets/material-icons/icons/openapi.svg'
+import icon252 from '../../../assets/material-icons/icons/opencode.svg'
+import icon253 from '../../../assets/material-icons/icons/oxc.svg'
+import icon254 from '../../../assets/material-icons/icons/packship.svg'
+import icon255 from '../../../assets/material-icons/icons/panda.svg'
+import icon256 from '../../../assets/material-icons/icons/payload.svg'
+import icon257 from '../../../assets/material-icons/icons/pdm.svg'
+import icon258 from '../../../assets/material-icons/icons/perl.svg'
+import icon259 from '../../../assets/material-icons/icons/php.svg'
+import icon260 from '../../../assets/material-icons/icons/phpunit.svg'
+import icon261 from '../../../assets/material-icons/icons/pkl.svg'
+import icon262 from '../../../assets/material-icons/icons/playwright.svg'
+import icon263 from '../../../assets/material-icons/icons/plop.svg'
+import icon264 from '../../../assets/material-icons/icons/pm2-ecosystem.svg'
+import icon265 from '../../../assets/material-icons/icons/pnpm.svg'
+import icon266 from '../../../assets/material-icons/icons/postcss.svg'
+import icon267 from '../../../assets/material-icons/icons/posthtml.svg'
+import icon268 from '../../../assets/material-icons/icons/powershell.svg'
+import icon269 from '../../../assets/material-icons/icons/prettier.svg'
+import icon270 from '../../../assets/material-icons/icons/prisma.svg'
+import icon271 from '../../../assets/material-icons/icons/prolog.svg'
+import icon272 from '../../../assets/material-icons/icons/protractor.svg'
+import icon273 from '../../../assets/material-icons/icons/puppeteer.svg'
+import icon274 from '../../../assets/material-icons/icons/python.svg'
+import icon275 from '../../../assets/material-icons/icons/python-misc.svg'
+import icon276 from '../../../assets/material-icons/icons/quasar.svg'
+import icon277 from '../../../assets/material-icons/icons/r.svg'
+import icon278 from '../../../assets/material-icons/icons/react.svg'
+import icon279 from '../../../assets/material-icons/icons/react_ts.svg'
+import icon280 from '../../../assets/material-icons/icons/readme.svg'
+import icon281 from '../../../assets/material-icons/icons/remix.svg'
+import icon282 from '../../../assets/material-icons/icons/renovate.svg'
+import icon283 from '../../../assets/material-icons/icons/roadmap.svg'
+import icon284 from '../../../assets/material-icons/icons/robots.svg'
+import icon285 from '../../../assets/material-icons/icons/rocket.svg'
+import icon286 from '../../../assets/material-icons/icons/rolldown.svg'
+import icon287 from '../../../assets/material-icons/icons/rollup.svg'
+import icon288 from '../../../assets/material-icons/icons/rome.svg'
+import icon289 from '../../../assets/material-icons/icons/routing.svg'
+import icon290 from '../../../assets/material-icons/icons/rstack.svg'
+import icon291 from '../../../assets/material-icons/icons/ruby.svg'
+import icon292 from '../../../assets/material-icons/icons/ruff.svg'
+import icon293 from '../../../assets/material-icons/icons/rust.svg'
+import icon294 from '../../../assets/material-icons/icons/sass.svg'
+import icon295 from '../../../assets/material-icons/icons/scala.svg'
+import icon296 from '../../../assets/material-icons/icons/screwdriver.svg'
+import icon297 from '../../../assets/material-icons/icons/semantic-release.svg'
+import icon298 from '../../../assets/material-icons/icons/semgrep.svg'
+import icon299 from '../../../assets/material-icons/icons/sentry.svg'
+import icon300 from '../../../assets/material-icons/icons/serverless.svg'
+import icon301 from '../../../assets/material-icons/icons/settings.svg'
+import icon302 from '../../../assets/material-icons/icons/skill.svg'
+import icon303 from '../../../assets/material-icons/icons/snapcraft.svg'
+import icon304 from '../../../assets/material-icons/icons/snowpack.svg'
+import icon305 from '../../../assets/material-icons/icons/solidity.svg'
+import icon306 from '../../../assets/material-icons/icons/sonarcloud.svg'
+import icon307 from '../../../assets/material-icons/icons/steadybit.svg'
+import icon308 from '../../../assets/material-icons/icons/stencil.svg'
+import icon309 from '../../../assets/material-icons/icons/stitches.svg'
+import icon310 from '../../../assets/material-icons/icons/stryker.svg'
+import icon311 from '../../../assets/material-icons/icons/stylelint.svg'
+import icon312 from '../../../assets/material-icons/icons/stylus.svg'
+import icon313 from '../../../assets/material-icons/icons/supabase.svg'
+import icon314 from '../../../assets/material-icons/icons/svelte.svg'
+import icon315 from '../../../assets/material-icons/icons/svg.svg'
+import icon316 from '../../../assets/material-icons/icons/svgo.svg'
+import icon317 from '../../../assets/material-icons/icons/svgr.svg'
+import icon318 from '../../../assets/material-icons/icons/swagger.svg'
+import icon319 from '../../../assets/material-icons/icons/swift.svg'
+import icon320 from '../../../assets/material-icons/icons/syncpack.svg'
+import icon321 from '../../../assets/material-icons/icons/table.svg'
+import icon322 from '../../../assets/material-icons/icons/tailwindcss.svg'
+import icon323 from '../../../assets/material-icons/icons/taskfile.svg'
+import icon324 from '../../../assets/material-icons/icons/tauri.svg'
+import icon325 from '../../../assets/material-icons/icons/taze.svg'
+import icon326 from '../../../assets/material-icons/icons/terraform.svg'
+import icon327 from '../../../assets/material-icons/icons/tex.svg'
+import icon328 from '../../../assets/material-icons/icons/todo.svg'
+import icon329 from '../../../assets/material-icons/icons/toml.svg'
+import icon330 from '../../../assets/material-icons/icons/trigger.svg'
+import icon331 from '../../../assets/material-icons/icons/tsconfig.svg'
+import icon332 from '../../../assets/material-icons/icons/tsdoc.svg'
+import icon333 from '../../../assets/material-icons/icons/tsdown.svg'
+import icon334 from '../../../assets/material-icons/icons/tune.svg'
+import icon335 from '../../../assets/material-icons/icons/turborepo.svg'
+import icon336 from '../../../assets/material-icons/icons/typedoc.svg'
+import icon337 from '../../../assets/material-icons/icons/typescript.svg'
+import icon338 from '../../../assets/material-icons/icons/typst.svg'
+import icon339 from '../../../assets/material-icons/icons/unlicense.svg'
+import icon340 from '../../../assets/material-icons/icons/unocss.svg'
+import icon341 from '../../../assets/material-icons/icons/uv.svg'
+import icon342 from '../../../assets/material-icons/icons/velite.svg'
+import icon343 from '../../../assets/material-icons/icons/vercel.svg'
+import icon344 from '../../../assets/material-icons/icons/verdaccio.svg'
+import icon345 from '../../../assets/material-icons/icons/vim.svg'
+import icon346 from '../../../assets/material-icons/icons/vite.svg'
+import icon347 from '../../../assets/material-icons/icons/vitest.svg'
+import icon348 from '../../../assets/material-icons/icons/vlang.svg'
+import icon349 from '../../../assets/material-icons/icons/vue.svg'
+import icon350 from '../../../assets/material-icons/icons/vue-config.svg'
+import icon351 from '../../../assets/material-icons/icons/wallaby.svg'
+import icon352 from '../../../assets/material-icons/icons/wally.svg'
+import icon353 from '../../../assets/material-icons/icons/warp.svg'
+import icon354 from '../../../assets/material-icons/icons/webpack.svg'
+import icon355 from '../../../assets/material-icons/icons/werf.svg'
+import icon356 from '../../../assets/material-icons/icons/windicss.svg'
+import icon357 from '../../../assets/material-icons/icons/wrangler.svg'
+import icon358 from '../../../assets/material-icons/icons/wxt.svg'
+import icon359 from '../../../assets/material-icons/icons/xaml.svg'
+import icon360 from '../../../assets/material-icons/icons/xmake.svg'
+import icon361 from '../../../assets/material-icons/icons/xml.svg'
+import icon362 from '../../../assets/material-icons/icons/yaml.svg'
+import icon363 from '../../../assets/material-icons/icons/yarn.svg'
+import icon364 from '../../../assets/material-icons/icons/zeabur.svg'
+import icon365 from '../../../assets/material-icons/icons/zig.svg'
 
 /** The SVG source of one drawing, by Material Icon Theme icon id. */
 export const ICON_ART: Record<string, string> = {
   "agent": icon0,
   "amplify": icon1,
-  "angular": icon2,
-  "appveyor": icon3,
-  "appwrite": icon4,
-  "architecture": icon5,
-  "aurelia": icon6,
-  "authors": icon7,
-  "auto": icon8,
-  "azure-pipelines": icon9,
-  "babel": icon10,
-  "bashly": icon11,
-  "bashly-settings": icon12,
-  "bashly-strings": icon13,
-  "biome": icon14,
-  "bitbucket": icon15,
-  "bower": icon16,
-  "buildkite": icon17,
-  "capacitor": icon18,
-  "changelog": icon19,
-  "chromatic": icon20,
-  "circleci": icon21,
-  "claude": icon22,
-  "cmake": icon23,
-  "codecov": icon24,
-  "commitizen": icon25,
-  "commitlint": icon26,
-  "concourse": icon27,
-  "conduct": icon28,
-  "contributing": icon29,
-  "copilot": icon30,
-  "craco": icon31,
-  "credits": icon32,
-  "cypress": icon33,
-  "deno": icon34,
-  "dependabot": icon35,
-  "docker": icon36,
-  "document": icon37,
-  "drizzle": icon38,
-  "eslint": icon39,
-  "excalidraw": icon40,
-  "expo": icon41,
-  "file": icon42,
-  "firebase": icon43,
-  "folder": icon44,
-  "folder-android": icon45,
-  "folder-android-open": icon46,
-  "folder-api": icon47,
-  "folder-api-open": icon48,
-  "folder-app": icon49,
-  "folder-app-open": icon50,
-  "folder-audio": icon51,
-  "folder-audio-open": icon52,
-  "folder-backup": icon53,
-  "folder-backup-open": icon54,
-  "folder-client": icon55,
-  "folder-client-open": icon56,
-  "folder-components": icon57,
-  "folder-components-open": icon58,
-  "folder-config": icon59,
-  "folder-config-open": icon60,
-  "folder-content": icon61,
-  "folder-content-open": icon62,
-  "folder-core": icon63,
-  "folder-core-open": icon64,
-  "folder-coverage": icon65,
-  "folder-coverage-open": icon66,
-  "folder-css": icon67,
-  "folder-css-open": icon68,
-  "folder-database": icon69,
-  "folder-database-open": icon70,
-  "folder-dist": icon71,
-  "folder-dist-open": icon72,
-  "folder-docs": icon73,
-  "folder-docs-open": icon74,
-  "folder-examples": icon75,
-  "folder-examples-open": icon76,
-  "folder-font": icon77,
-  "folder-font-open": icon78,
-  "folder-git": icon79,
-  "folder-git-open": icon80,
-  "folder-github": icon81,
-  "folder-github-open": icon82,
-  "folder-gitlab": icon83,
-  "folder-gitlab-open": icon84,
-  "folder-hook": icon85,
-  "folder-hook-open": icon86,
-  "folder-i18n": icon87,
-  "folder-i18n-open": icon88,
-  "folder-images": icon89,
-  "folder-images-open": icon90,
-  "folder-include": icon91,
-  "folder-include-open": icon92,
-  "folder-ios": icon93,
-  "folder-ios-open": icon94,
-  "folder-jupyter": icon95,
-  "folder-jupyter-open": icon96,
-  "folder-layout": icon97,
-  "folder-layout-open": icon98,
-  "folder-lib": icon99,
-  "folder-lib-open": icon100,
-  "folder-linux": icon101,
-  "folder-linux-open": icon102,
-  "folder-macos": icon103,
-  "folder-macos-open": icon104,
-  "folder-markdown": icon105,
-  "folder-markdown-open": icon106,
-  "folder-mobile": icon107,
-  "folder-mobile-open": icon108,
-  "folder-node": icon109,
-  "folder-node-open": icon110,
-  "folder-open": icon111,
-  "folder-packages": icon112,
-  "folder-packages-open": icon113,
-  "folder-plugin": icon114,
-  "folder-plugin-open": icon115,
-  "folder-public": icon116,
-  "folder-public-open": icon117,
-  "folder-resource": icon118,
-  "folder-resource-open": icon119,
-  "folder-routes": icon120,
-  "folder-routes-open": icon121,
-  "folder-scripts": icon122,
-  "folder-scripts-open": icon123,
-  "folder-server": icon124,
-  "folder-server-open": icon125,
-  "folder-shared": icon126,
-  "folder-shared-open": icon127,
-  "folder-src": icon128,
-  "folder-src-open": icon129,
-  "folder-store": icon130,
-  "folder-store-open": icon131,
-  "folder-temp": icon132,
-  "folder-temp-open": icon133,
-  "folder-template": icon134,
-  "folder-template-open": icon135,
-  "folder-test": icon136,
-  "folder-test-open": icon137,
-  "folder-theme": icon138,
-  "folder-theme-open": icon139,
-  "folder-tools": icon140,
-  "folder-tools-open": icon141,
-  "folder-typescript": icon142,
-  "folder-typescript-open": icon143,
-  "folder-utils": icon144,
-  "folder-utils-open": icon145,
-  "folder-video": icon146,
-  "folder-video-open": icon147,
-  "folder-views": icon148,
-  "folder-views-open": icon149,
-  "folder-vscode": icon150,
-  "folder-vscode-open": icon151,
-  "folder-windows": icon152,
-  "folder-windows-open": icon153,
-  "garden": icon154,
-  "gemini-ai": icon155,
-  "google": icon156,
-  "graphql": icon157,
-  "hadolint": icon158,
-  "horusec": icon159,
-  "husky": icon160,
-  "instructions": icon161,
-  "ionic": icon162,
-  "jest": icon163,
-  "jsconfig": icon164,
-  "json": icon165,
-  "jsr": icon166,
-  "kcl": icon167,
-  "knip": icon168,
-  "kubernetes": icon169,
-  "lefthook": icon170,
-  "lerna": icon171,
-  "liara": icon172,
-  "license": icon173,
-  "lighthouse": icon174,
-  "lock": icon175,
-  "markdown": icon176,
-  "meson": icon177,
-  "metro": icon178,
-  "minecraft-fabric": icon179,
-  "moon": icon180,
-  "nano-staged": icon181,
-  "nest": icon182,
-  "netlify": icon183,
-  "nodejs": icon184,
-  "nodemon": icon185,
-  "nx": icon186,
-  "openapi": icon187,
-  "opencode": icon188,
-  "packship": icon189,
-  "phpunit": icon190,
-  "pkl": icon191,
-  "pnpm": icon192,
-  "postcss": icon193,
-  "posthtml": icon194,
-  "prettier": icon195,
-  "prisma": icon196,
-  "puppeteer": icon197,
-  "python-misc": icon198,
-  "readme": icon199,
-  "renovate": icon200,
-  "roadmap": icon201,
-  "robots": icon202,
-  "rome": icon203,
-  "rstack": icon204,
-  "screwdriver": icon205,
-  "semantic-release": icon206,
-  "semgrep": icon207,
-  "serverless": icon208,
-  "settings": icon209,
-  "skill": icon210,
-  "snapcraft": icon211,
-  "snowpack": icon212,
-  "sonarcloud": icon213,
-  "steadybit": icon214,
-  "stryker": icon215,
-  "stylelint": icon216,
-  "svgr": icon217,
-  "swagger": icon218,
-  "syncpack": icon219,
-  "table": icon220,
-  "taskfile": icon221,
-  "tauri": icon222,
-  "todo": icon223,
-  "tsconfig": icon224,
-  "tsdoc": icon225,
-  "tsdown": icon226,
-  "turborepo": icon227,
-  "typedoc": icon228,
-  "unlicense": icon229,
-  "vercel": icon230,
-  "verdaccio": icon231,
-  "vlang": icon232,
-  "warp": icon233,
-  "werf": icon234,
-  "windicss": icon235,
-  "wrangler": icon236,
-  "xaml": icon237,
-  "yaml": icon238,
-  "zeabur": icon239,
+  "android": icon2,
+  "angular": icon3,
+  "apollo": icon4,
+  "appveyor": icon5,
+  "appwrite": icon6,
+  "architecture": icon7,
+  "asciidoc": icon8,
+  "assembly": icon9,
+  "astro": icon10,
+  "astro-config": icon11,
+  "aurelia": icon12,
+  "authors": icon13,
+  "auto": icon14,
+  "azure-pipelines": icon15,
+  "babel": icon16,
+  "bashly": icon17,
+  "bashly-settings": icon18,
+  "bashly-strings": icon19,
+  "biome": icon20,
+  "bitbucket": icon21,
+  "blitz": icon22,
+  "bower": icon23,
+  "buildkite": icon24,
+  "bun": icon25,
+  "c": icon26,
+  "capacitor": icon27,
+  "changelog": icon28,
+  "chromatic": icon29,
+  "circleci": icon30,
+  "claude": icon31,
+  "clojure": icon32,
+  "cmake": icon33,
+  "codecov": icon34,
+  "commitizen": icon35,
+  "commitlint": icon36,
+  "concourse": icon37,
+  "conduct": icon38,
+  "console": icon39,
+  "contentlayer": icon40,
+  "contributing": icon41,
+  "copilot": icon42,
+  "cpp": icon43,
+  "craco": icon44,
+  "credits": icon45,
+  "csharp": icon46,
+  "css": icon47,
+  "cypress": icon48,
+  "dart": icon49,
+  "database": icon50,
+  "deno": icon51,
+  "dependabot": icon52,
+  "diff": icon53,
+  "docker": icon54,
+  "document": icon55,
+  "drizzle": icon56,
+  "elixir": icon57,
+  "elm": icon58,
+  "ember": icon59,
+  "erlang": icon60,
+  "esbuild": icon61,
+  "eslint": icon62,
+  "excalidraw": icon63,
+  "expo": icon64,
+  "file": icon65,
+  "firebase": icon66,
+  "folder": icon67,
+  "folder-android": icon68,
+  "folder-android-open": icon69,
+  "folder-api": icon70,
+  "folder-api-open": icon71,
+  "folder-app": icon72,
+  "folder-app-open": icon73,
+  "folder-audio": icon74,
+  "folder-audio-open": icon75,
+  "folder-backup": icon76,
+  "folder-backup-open": icon77,
+  "folder-client": icon78,
+  "folder-client-open": icon79,
+  "folder-components": icon80,
+  "folder-components-open": icon81,
+  "folder-config": icon82,
+  "folder-config-open": icon83,
+  "folder-content": icon84,
+  "folder-content-open": icon85,
+  "folder-core": icon86,
+  "folder-core-open": icon87,
+  "folder-coverage": icon88,
+  "folder-coverage-open": icon89,
+  "folder-css": icon90,
+  "folder-css-open": icon91,
+  "folder-database": icon92,
+  "folder-database-open": icon93,
+  "folder-dist": icon94,
+  "folder-dist-open": icon95,
+  "folder-docs": icon96,
+  "folder-docs-open": icon97,
+  "folder-examples": icon98,
+  "folder-examples-open": icon99,
+  "folder-font": icon100,
+  "folder-font-open": icon101,
+  "folder-git": icon102,
+  "folder-git-open": icon103,
+  "folder-github": icon104,
+  "folder-github-open": icon105,
+  "folder-gitlab": icon106,
+  "folder-gitlab-open": icon107,
+  "folder-hook": icon108,
+  "folder-hook-open": icon109,
+  "folder-i18n": icon110,
+  "folder-i18n-open": icon111,
+  "folder-images": icon112,
+  "folder-images-open": icon113,
+  "folder-include": icon114,
+  "folder-include-open": icon115,
+  "folder-ios": icon116,
+  "folder-ios-open": icon117,
+  "folder-jupyter": icon118,
+  "folder-jupyter-open": icon119,
+  "folder-layout": icon120,
+  "folder-layout-open": icon121,
+  "folder-lib": icon122,
+  "folder-lib-open": icon123,
+  "folder-linux": icon124,
+  "folder-linux-open": icon125,
+  "folder-macos": icon126,
+  "folder-macos-open": icon127,
+  "folder-markdown": icon128,
+  "folder-markdown-open": icon129,
+  "folder-mobile": icon130,
+  "folder-mobile-open": icon131,
+  "folder-node": icon132,
+  "folder-node-open": icon133,
+  "folder-open": icon134,
+  "folder-packages": icon135,
+  "folder-packages-open": icon136,
+  "folder-plugin": icon137,
+  "folder-plugin-open": icon138,
+  "folder-public": icon139,
+  "folder-public-open": icon140,
+  "folder-resource": icon141,
+  "folder-resource-open": icon142,
+  "folder-routes": icon143,
+  "folder-routes-open": icon144,
+  "folder-scripts": icon145,
+  "folder-scripts-open": icon146,
+  "folder-server": icon147,
+  "folder-server-open": icon148,
+  "folder-shared": icon149,
+  "folder-shared-open": icon150,
+  "folder-src": icon151,
+  "folder-src-open": icon152,
+  "folder-store": icon153,
+  "folder-store-open": icon154,
+  "folder-temp": icon155,
+  "folder-temp-open": icon156,
+  "folder-template": icon157,
+  "folder-template-open": icon158,
+  "folder-test": icon159,
+  "folder-test-open": icon160,
+  "folder-theme": icon161,
+  "folder-theme-open": icon162,
+  "folder-tools": icon163,
+  "folder-tools-open": icon164,
+  "folder-typescript": icon165,
+  "folder-typescript-open": icon166,
+  "folder-utils": icon167,
+  "folder-utils-open": icon168,
+  "folder-video": icon169,
+  "folder-video-open": icon170,
+  "folder-views": icon171,
+  "folder-views-open": icon172,
+  "folder-vscode": icon173,
+  "folder-vscode-open": icon174,
+  "folder-windows": icon175,
+  "folder-windows-open": icon176,
+  "fsharp": icon177,
+  "fusebox": icon178,
+  "garden": icon179,
+  "gatsby": icon180,
+  "gemini-ai": icon181,
+  "git": icon182,
+  "gleam": icon183,
+  "go": icon184,
+  "google": icon185,
+  "gradle": icon186,
+  "graphql": icon187,
+  "gridsome": icon188,
+  "groovy": icon189,
+  "grunt": icon190,
+  "gulp": icon191,
+  "h": icon192,
+  "hadolint": icon193,
+  "hardhat": icon194,
+  "harmonix": icon195,
+  "haskell": icon196,
+  "hcl": icon197,
+  "histoire": icon198,
+  "horusec": icon199,
+  "hpp": icon200,
+  "html": icon201,
+  "husky": icon202,
+  "instructions": icon203,
+  "ionic": icon204,
+  "istanbul": icon205,
+  "java": icon206,
+  "javascript": icon207,
+  "jest": icon208,
+  "jsconfig": icon209,
+  "json": icon210,
+  "jsr": icon211,
+  "julia": icon212,
+  "karma": icon213,
+  "kcl": icon214,
+  "keystatic": icon215,
+  "knip": icon216,
+  "kotlin": icon217,
+  "kubernetes": icon218,
+  "lefthook": icon219,
+  "lerna": icon220,
+  "less": icon221,
+  "liara": icon222,
+  "license": icon223,
+  "lighthouse": icon224,
+  "lintstaged": icon225,
+  "lock": icon226,
+  "log": icon227,
+  "lua": icon228,
+  "lynx": icon229,
+  "makefile": icon230,
+  "markdoc-config": icon231,
+  "markdown": icon232,
+  "maven": icon233,
+  "mdx": icon234,
+  "mercurial": icon235,
+  "meson": icon236,
+  "metro": icon237,
+  "minecraft-fabric": icon238,
+  "moon": icon239,
+  "nano-staged": icon240,
+  "nest": icon241,
+  "netlify": icon242,
+  "next": icon243,
+  "nginx": icon244,
+  "nim": icon245,
+  "nix": icon246,
+  "nodejs": icon247,
+  "nodemon": icon248,
+  "nuxt": icon249,
+  "nx": icon250,
+  "openapi": icon251,
+  "opencode": icon252,
+  "oxc": icon253,
+  "packship": icon254,
+  "panda": icon255,
+  "payload": icon256,
+  "pdm": icon257,
+  "perl": icon258,
+  "php": icon259,
+  "phpunit": icon260,
+  "pkl": icon261,
+  "playwright": icon262,
+  "plop": icon263,
+  "pm2-ecosystem": icon264,
+  "pnpm": icon265,
+  "postcss": icon266,
+  "posthtml": icon267,
+  "powershell": icon268,
+  "prettier": icon269,
+  "prisma": icon270,
+  "prolog": icon271,
+  "protractor": icon272,
+  "puppeteer": icon273,
+  "python": icon274,
+  "python-misc": icon275,
+  "quasar": icon276,
+  "r": icon277,
+  "react": icon278,
+  "react_ts": icon279,
+  "readme": icon280,
+  "remix": icon281,
+  "renovate": icon282,
+  "roadmap": icon283,
+  "robots": icon284,
+  "rocket": icon285,
+  "rolldown": icon286,
+  "rollup": icon287,
+  "rome": icon288,
+  "routing": icon289,
+  "rstack": icon290,
+  "ruby": icon291,
+  "ruff": icon292,
+  "rust": icon293,
+  "sass": icon294,
+  "scala": icon295,
+  "screwdriver": icon296,
+  "semantic-release": icon297,
+  "semgrep": icon298,
+  "sentry": icon299,
+  "serverless": icon300,
+  "settings": icon301,
+  "skill": icon302,
+  "snapcraft": icon303,
+  "snowpack": icon304,
+  "solidity": icon305,
+  "sonarcloud": icon306,
+  "steadybit": icon307,
+  "stencil": icon308,
+  "stitches": icon309,
+  "stryker": icon310,
+  "stylelint": icon311,
+  "stylus": icon312,
+  "supabase": icon313,
+  "svelte": icon314,
+  "svg": icon315,
+  "svgo": icon316,
+  "svgr": icon317,
+  "swagger": icon318,
+  "swift": icon319,
+  "syncpack": icon320,
+  "table": icon321,
+  "tailwindcss": icon322,
+  "taskfile": icon323,
+  "tauri": icon324,
+  "taze": icon325,
+  "terraform": icon326,
+  "tex": icon327,
+  "todo": icon328,
+  "toml": icon329,
+  "trigger": icon330,
+  "tsconfig": icon331,
+  "tsdoc": icon332,
+  "tsdown": icon333,
+  "tune": icon334,
+  "turborepo": icon335,
+  "typedoc": icon336,
+  "typescript": icon337,
+  "typst": icon338,
+  "unlicense": icon339,
+  "unocss": icon340,
+  "uv": icon341,
+  "velite": icon342,
+  "vercel": icon343,
+  "verdaccio": icon344,
+  "vim": icon345,
+  "vite": icon346,
+  "vitest": icon347,
+  "vlang": icon348,
+  "vue": icon349,
+  "vue-config": icon350,
+  "wallaby": icon351,
+  "wally": icon352,
+  "warp": icon353,
+  "webpack": icon354,
+  "werf": icon355,
+  "windicss": icon356,
+  "wrangler": icon357,
+  "wxt": icon358,
+  "xaml": icon359,
+  "xmake": icon360,
+  "xml": icon361,
+  "yaml": icon362,
+  "yarn": icon363,
+  "zeabur": icon364,
+  "zig": icon365,
 }
 
 /** File-name associations (already lower-cased): the theme's most specific rule. */
 export const FILE_NAMES: Record<string, string> = {
   "agents.md": "agent",
   "amplify.yml": "amplify",
+  "androidmanifest.xml": "android",
   "angular-cli.json": "angular",
   "angular.json": "angular",
+  "apollo.config.js": "apollo",
   "appveyor.yml": "appveyor",
+  "appwrite.js": "appwrite",
   "appwrite.json": "appwrite",
+  "appwrite.ts": "appwrite",
   "architecture": "architecture",
   "architecture.md": "architecture",
+  "architecture.rst": "architecture",
   "architecture.txt": "architecture",
+  "astro.config.cjs": "astro-config",
+  "astro.config.cts": "astro-config",
+  "astro.config.js": "astro-config",
+  "astro.config.mjs": "astro-config",
+  "astro.config.mts": "astro-config",
+  "astro.config.ts": "astro-config",
   "aurelia.json": "aurelia",
   "authors.md": "authors",
+  "authors.rst": "authors",
   "authors.txt": "authors",
+  "auto-config.js": "auto",
   "auto-config.json": "auto",
+  "auto-config.ts": "auto",
   "auto-config.yaml": "auto",
   "auto-config.yml": "auto",
+  "auto.config.js": "auto",
+  "auto.config.ts": "auto",
   "azure-pipelines-main.yaml": "azure-pipelines",
   "azure-pipelines-main.yml": "azure-pipelines",
   "azure-pipelines.yaml": "azure-pipelines",
   "azure-pipelines.yml": "azure-pipelines",
+  "babel-plugin-macros.config.cjs": "babel",
+  "babel-plugin-macros.config.cts": "babel",
+  "babel-plugin-macros.config.js": "babel",
   "babel-plugin-macros.config.json": "babel",
+  "babel-plugin-macros.config.json5": "babel",
+  "babel-plugin-macros.config.jsonc": "babel",
+  "babel-plugin-macros.config.mjs": "babel",
+  "babel-plugin-macros.config.mts": "babel",
+  "babel-plugin-macros.config.toml": "babel",
+  "babel-plugin-macros.config.ts": "babel",
   "babel-plugin-macros.config.yaml": "babel",
   "babel-plugin-macros.config.yml": "babel",
+  "babel-transform.js": "babel",
+  "babel.config.cjs": "babel",
+  "babel.config.cts": "babel",
+  "babel.config.js": "babel",
   "babel.config.json": "babel",
+  "babel.config.json5": "babel",
+  "babel.config.jsonc": "babel",
+  "babel.config.mjs": "babel",
+  "babel.config.mts": "babel",
+  "babel.config.toml": "babel",
+  "babel.config.ts": "babel",
   "babel.config.yaml": "babel",
   "babel.config.yml": "babel",
   "bashly-settings.yaml": "bashly-settings",
   "bashly-settings.yml": "bashly-settings",
   "biome.json": "biome",
+  "biome.jsonc": "biome",
   "bitbucket-pipelines.yaml": "bitbucket",
   "bitbucket-pipelines.yml": "bitbucket",
+  "blitz.config.js": "blitz",
+  "blitz.config.ts": "blitz",
   "bower.json": "bower",
   "buildkite.yaml": "buildkite",
   "buildkite.yml": "buildkite",
+  "bunfig.toml": "bun",
   "capacitor.config.json": "capacitor",
+  "capacitor.config.ts": "capacitor",
   "changelog": "changelog",
   "changelog.md": "changelog",
+  "changelog.rst": "changelog",
   "changelog.txt": "changelog",
   "changes": "changelog",
   "changes.md": "changelog",
+  "changes.rst": "changelog",
   "changes.txt": "changelog",
   "chromatic.config.json": "chromatic",
   "circle.yml": "circleci",
@@ -545,7 +839,16 @@ export const FILE_NAMES: Record<string, string> = {
   "code_of_conduct.txt": "conduct",
   "codecov.yaml": "codecov",
   "codecov.yml": "codecov",
+  "commitlint.config.cjs": "commitlint",
+  "commitlint.config.cts": "commitlint",
+  "commitlint.config.js": "commitlint",
   "commitlint.config.json": "commitlint",
+  "commitlint.config.json5": "commitlint",
+  "commitlint.config.jsonc": "commitlint",
+  "commitlint.config.mjs": "commitlint",
+  "commitlint.config.mts": "commitlint",
+  "commitlint.config.toml": "commitlint",
+  "commitlint.config.ts": "commitlint",
   "commitlint.config.yaml": "commitlint",
   "commitlint.config.yml": "commitlint",
   "compile_flags.txt": "settings",
@@ -582,30 +885,58 @@ export const FILE_NAMES: Record<string, string> = {
   "compose.yaml": "docker",
   "compose.yml": "docker",
   "concourse.yml": "concourse",
+  "contentlayer.config.cjs": "contentlayer",
+  "contentlayer.config.cts": "contentlayer",
+  "contentlayer.config.js": "contentlayer",
+  "contentlayer.config.mjs": "contentlayer",
+  "contentlayer.config.mts": "contentlayer",
+  "contentlayer.config.ts": "contentlayer",
   "contributing": "contributing",
   "contributing.md": "contributing",
+  "contributing.rst": "contributing",
   "contributing.txt": "contributing",
   "contributors.md": "authors",
+  "contributors.rst": "authors",
   "contributors.txt": "authors",
   "copilot-instructions.md": "copilot",
   "copying": "license",
   "copying.md": "license",
+  "copying.rst": "license",
   "copying.txt": "license",
   "copyright": "license",
   "copyright.md": "license",
+  "copyright.rst": "license",
   "copyright.txt": "license",
+  "craco.config.cjs": "craco",
+  "craco.config.cts": "craco",
+  "craco.config.js": "craco",
   "craco.config.json": "craco",
+  "craco.config.json5": "craco",
+  "craco.config.jsonc": "craco",
+  "craco.config.mjs": "craco",
+  "craco.config.mts": "craco",
+  "craco.config.toml": "craco",
+  "craco.config.ts": "craco",
   "craco.config.yaml": "craco",
   "craco.config.yml": "craco",
   "credits": "credits",
   "credits.md": "credits",
+  "credits.rst": "credits",
   "credits.txt": "credits",
+  "cypress.config.cjs": "cypress",
+  "cypress.config.cts": "cypress",
+  "cypress.config.js": "cypress",
+  "cypress.config.mjs": "cypress",
+  "cypress.config.mts": "cypress",
+  "cypress.config.ts": "cypress",
   "cypress.env.json": "cypress",
   "cypress.json": "cypress",
   "cz.json": "commitizen",
+  "cz.toml": "commitizen",
   "cz.yaml": "commitizen",
   "cz.yml": "commitizen",
   "deno.json": "deno",
+  "deno.jsonc": "deno",
   "dependabot.yaml": "dependabot",
   "dependabot.yml": "dependabot",
   "docker-compose.alpha.yaml": "docker",
@@ -640,54 +971,220 @@ export const FILE_NAMES: Record<string, string> = {
   "docker-compose.worker.yml": "docker",
   "docker-compose.yaml": "docker",
   "docker-compose.yml": "docker",
+  "drizzle.config.dev.js": "drizzle",
   "drizzle.config.dev.json": "drizzle",
+  "drizzle.config.dev.ts": "drizzle",
+  "drizzle.config.js": "drizzle",
   "drizzle.config.json": "drizzle",
+  "drizzle.config.prod.js": "drizzle",
   "drizzle.config.prod.json": "drizzle",
+  "drizzle.config.prod.ts": "drizzle",
+  "drizzle.config.ts": "drizzle",
   "eas.json": "expo",
+  "ecosystem.config.cjs": "pm2-ecosystem",
+  "ecosystem.config.cts": "pm2-ecosystem",
+  "ecosystem.config.js": "pm2-ecosystem",
+  "ecosystem.config.mjs": "pm2-ecosystem",
+  "ecosystem.config.mts": "pm2-ecosystem",
+  "ecosystem.config.ts": "pm2-ecosystem",
+  "ember-cli-builds.js": "ember",
+  "esbuild.cjs": "esbuild",
+  "esbuild.config.cjs": "esbuild",
+  "esbuild.config.cts": "esbuild",
+  "esbuild.config.js": "esbuild",
+  "esbuild.config.mjs": "esbuild",
+  "esbuild.config.mts": "esbuild",
+  "esbuild.config.ts": "esbuild",
+  "esbuild.cts": "esbuild",
+  "esbuild.dev.cjs": "esbuild",
+  "esbuild.dev.cts": "esbuild",
+  "esbuild.dev.js": "esbuild",
+  "esbuild.dev.mjs": "esbuild",
+  "esbuild.dev.mts": "esbuild",
+  "esbuild.dev.ts": "esbuild",
+  "esbuild.js": "esbuild",
+  "esbuild.mjs": "esbuild",
+  "esbuild.mts": "esbuild",
+  "esbuild.prod.cjs": "esbuild",
+  "esbuild.prod.cts": "esbuild",
+  "esbuild.prod.js": "esbuild",
+  "esbuild.prod.mjs": "esbuild",
+  "esbuild.prod.mts": "esbuild",
+  "esbuild.prod.ts": "esbuild",
+  "esbuild.stage.cjs": "esbuild",
+  "esbuild.stage.cts": "esbuild",
+  "esbuild.stage.js": "esbuild",
+  "esbuild.stage.mjs": "esbuild",
+  "esbuild.stage.mts": "esbuild",
+  "esbuild.stage.ts": "esbuild",
+  "esbuild.test.cjs": "esbuild",
+  "esbuild.test.cts": "esbuild",
+  "esbuild.test.js": "esbuild",
+  "esbuild.test.mjs": "esbuild",
+  "esbuild.test.mts": "esbuild",
+  "esbuild.test.ts": "esbuild",
+  "esbuild.ts": "esbuild",
+  "eslint-options.js": "eslint",
+  "eslint.config.cjs": "eslint",
+  "eslint.config.cts": "eslint",
+  "eslint.config.js": "eslint",
   "eslint.config.json": "eslint",
+  "eslint.config.json5": "eslint",
+  "eslint.config.jsonc": "eslint",
+  "eslint.config.mjs": "eslint",
+  "eslint.config.mts": "eslint",
+  "eslint.config.toml": "eslint",
+  "eslint.config.ts": "eslint",
   "eslint.config.yaml": "eslint",
   "eslint.config.yml": "eslint",
   "excalidraw.json": "excalidraw",
+  "excalidraw.svg": "excalidraw",
   "fabric.mod.json": "minecraft-fabric",
+  "firebase.config.js": "firebase",
   "firebase.json": "firebase",
   "firestore.indexes.json": "firebase",
+  "fuse.js": "fusebox",
   "garden.yaml": "garden",
   "garden.yml": "garden",
+  "gatsby-browser.js": "gatsby",
+  "gatsby-browser.tsx": "gatsby",
+  "gatsby-config.js": "gatsby",
+  "gatsby-config.mjs": "gatsby",
+  "gatsby-config.ts": "gatsby",
+  "gatsby-node.js": "gatsby",
+  "gatsby-node.mjs": "gatsby",
+  "gatsby-node.ts": "gatsby",
+  "gatsby-ssr.js": "gatsby",
+  "gatsby-ssr.tsx": "gatsby",
   "gemini.md": "gemini-ai",
+  "gleam.toml": "gleam",
   "google-services.json": "google",
+  "gradle-wrapper.properties": "gradle",
+  "gradle.properties": "gradle",
+  "gradlew.bat": "gradle",
+  "graphql.config.cjs": "graphql",
+  "graphql.config.cts": "graphql",
+  "graphql.config.js": "graphql",
   "graphql.config.json": "graphql",
+  "graphql.config.json5": "graphql",
+  "graphql.config.jsonc": "graphql",
+  "graphql.config.mjs": "graphql",
+  "graphql.config.mts": "graphql",
+  "graphql.config.toml": "graphql",
+  "graphql.config.ts": "graphql",
   "graphql.config.yaml": "graphql",
   "graphql.config.yml": "graphql",
+  "gridsome.config.js": "gridsome",
+  "gridsome.server.js": "gridsome",
+  "gruntfile.babel.js": "grunt",
+  "gruntfile.babel.ts": "grunt",
+  "gruntfile.cjs": "grunt",
+  "gruntfile.cts": "grunt",
+  "gruntfile.js": "grunt",
+  "gruntfile.ts": "grunt",
+  "gulpfile.babel.js": "gulp",
+  "gulpfile.cjs": "gulp",
+  "gulpfile.cts": "gulp",
+  "gulpfile.js": "gulp",
+  "gulpfile.mjs": "gulp",
+  "gulpfile.mts": "gulp",
+  "gulpfile.ts": "gulp",
   "hadolint.yaml": "hadolint",
   "hadolint.yml": "hadolint",
+  "hardhat.config.js": "hardhat",
+  "hardhat.config.ts": "hardhat",
+  "harmonix.config.js": "harmonix",
+  "harmonix.config.ts": "harmonix",
+  "histoire.config.cjs": "histoire",
+  "histoire.config.cts": "histoire",
+  "histoire.config.js": "histoire",
+  "histoire.config.mjs": "histoire",
+  "histoire.config.mts": "histoire",
+  "histoire.config.ts": "histoire",
   "horusec-config.json": "horusec",
+  "husky.config.cjs": "husky",
+  "husky.config.cts": "husky",
+  "husky.config.js": "husky",
   "husky.config.json": "husky",
+  "husky.config.json5": "husky",
+  "husky.config.jsonc": "husky",
+  "husky.config.mjs": "husky",
+  "husky.config.mts": "husky",
+  "husky.config.toml": "husky",
+  "husky.config.ts": "husky",
   "husky.config.yaml": "husky",
   "husky.config.yml": "husky",
   "instruction.md": "instructions",
   "instructions.md": "instructions",
   "ionic.config.json": "ionic",
+  "jest-e2e.config.cjs": "jest",
+  "jest-e2e.config.cts": "jest",
+  "jest-e2e.config.js": "jest",
   "jest-e2e.config.json": "jest",
+  "jest-e2e.config.mjs": "jest",
+  "jest-e2e.config.mts": "jest",
+  "jest-e2e.config.ts": "jest",
   "jest-e2e.json": "jest",
+  "jest-github-actions-reporter.js": "jest",
+  "jest-preset.cjs": "jest",
+  "jest-preset.js": "jest",
   "jest-preset.json": "jest",
+  "jest-preset.mjs": "jest",
+  "jest-unit.config.js": "jest",
+  "jest.config.cjs": "jest",
+  "jest.config.cts": "jest",
+  "jest.config.js": "jest",
   "jest.config.json": "jest",
+  "jest.config.mjs": "jest",
+  "jest.config.mts": "jest",
+  "jest.config.ts": "jest",
+  "jest.e2e.config.cjs": "jest",
+  "jest.e2e.config.cts": "jest",
+  "jest.e2e.config.js": "jest",
   "jest.e2e.config.json": "jest",
+  "jest.e2e.config.mjs": "jest",
+  "jest.e2e.config.mts": "jest",
+  "jest.e2e.config.ts": "jest",
   "jest.e2e.json": "jest",
   "jest.json": "jest",
+  "jest.preset.cjs": "jest",
+  "jest.preset.js": "jest",
   "jest.preset.json": "jest",
+  "jest.preset.mjs": "jest",
+  "jest.setup.js": "jest",
+  "jest.setup.ts": "jest",
+  "jest.teardown.js": "jest",
   "jsconfig.json": "jsconfig",
   "jsr.json": "jsr",
+  "jsr.jsonc": "jsr",
   "k8s.yaml": "kubernetes",
   "k8s.yml": "kubernetes",
+  "karma-main.js": "karma",
+  "karma-main.ts": "karma",
+  "karma.conf.js": "karma",
+  "karma.conf.ts": "karma",
+  "karma.config.js": "karma",
+  "karma.config.ts": "karma",
   "kcl.yaml": "kcl",
   "kcl.yml": "kcl",
+  "keystatic.config.js": "keystatic",
+  "keystatic.config.jsx": "keystatic",
+  "keystatic.config.ts": "keystatic",
+  "keystatic.config.tsx": "keystatic",
+  "knip.config.js": "knip",
+  "knip.config.ts": "knip",
+  "knip.js": "knip",
   "knip.json": "knip",
+  "knip.jsonc": "knip",
+  "knip.ts": "knip",
   "kubernetes.yaml": "kubernetes",
   "kubernetes.yml": "kubernetes",
   "lefthook-local.json": "lefthook",
+  "lefthook-local.toml": "lefthook",
   "lefthook-local.yaml": "lefthook",
   "lefthook-local.yml": "lefthook",
   "lefthook.json": "lefthook",
+  "lefthook.toml": "lefthook",
   "lefthook.yaml": "lefthook",
   "lefthook.yml": "lefthook",
   "lerna.json": "lerna",
@@ -700,6 +1197,7 @@ export const FILE_NAMES: Record<string, string> = {
   "licence-lgpl": "license",
   "licence-mit": "license",
   "licence.md": "license",
+  "licence.rst": "license",
   "licence.txt": "license",
   "license": "license",
   "license-agpl": "license",
@@ -709,100 +1207,416 @@ export const FILE_NAMES: Record<string, string> = {
   "license-lgpl": "license",
   "license-mit": "license",
   "license.md": "license",
+  "license.rst": "license",
   "license.txt": "license",
+  "lighthouserc.cjs": "lighthouse",
+  "lighthouserc.js": "lighthouse",
   "lighthouserc.json": "lighthouse",
   "lighthouserc.yaml": "lighthouse",
   "lighthouserc.yml": "lighthouse",
+  "lint-staged.config.cjs": "lintstaged",
+  "lint-staged.config.js": "lintstaged",
+  "lint-staged.config.mjs": "lintstaged",
+  "lint-staged.config.ts": "lintstaged",
+  "lynx.config.cjs": "lynx",
+  "lynx.config.cts": "lynx",
+  "lynx.config.js": "lynx",
+  "lynx.config.mjs": "lynx",
+  "lynx.config.mts": "lynx",
+  "lynx.config.ts": "lynx",
+  "markdoc.config.cjs": "markdoc-config",
+  "markdoc.config.cts": "markdoc-config",
+  "markdoc.config.js": "markdoc-config",
+  "markdoc.config.mjs": "markdoc-config",
+  "markdoc.config.mts": "markdoc-config",
+  "markdoc.config.ts": "markdoc-config",
+  "mercurial.ini": "mercurial",
   "meson_options.txt": "meson",
+  "metro.config.cjs": "metro",
+  "metro.config.cts": "metro",
+  "metro.config.js": "metro",
   "metro.config.json": "metro",
+  "metro.config.mjs": "metro",
+  "metro.config.mts": "metro",
+  "metro.config.ts": "metro",
   "milestones.md": "roadmap",
   "milestones.txt": "roadmap",
   "moon.yml": "moon",
+  "nano-staged.cjs": "nano-staged",
+  "nano-staged.js": "nano-staged",
   "nano-staged.json": "nano-staged",
+  "nano-staged.mjs": "nano-staged",
   "nest-cli.json": "nest",
   "nestconfig.json": "nest",
   "netlify.json": "netlify",
+  "netlify.toml": "netlify",
   "netlify.yaml": "netlify",
   "netlify.yml": "netlify",
+  "next.config.js": "next",
+  "next.config.mjs": "next",
+  "next.config.mts": "next",
+  "next.config.ts": "next",
   "ng-package.json": "angular",
+  "nginx.conf": "nginx",
   "nodemon-debug.json": "nodemon",
   "nodemon.json": "nodemon",
   "now.json": "vercel",
+  "nuxt.config.js": "nuxt",
+  "nuxt.config.ts": "nuxt",
   "nx.json": "nx",
+  "nyc.config.cjs": "istanbul",
+  "nyc.config.js": "istanbul",
   "openapi.json": "openapi",
   "openapi.yaml": "openapi",
   "openapi.yml": "openapi",
   "opencode.json": "opencode",
+  "opencode.jsonc": "opencode",
+  "oxfmt.config.ts": "oxc",
+  "oxlint.config.ts": "oxc",
   "package-lock.json": "nodejs",
   "package.json": "nodejs",
+  "packship.config.js": "packship",
   "packship.config.json": "packship",
+  "packship.config.mjs": "packship",
+  "packship.config.mts": "packship",
+  "packship.config.ts": "packship",
+  "panda.config.cjs": "panda",
+  "panda.config.cts": "panda",
+  "panda.config.js": "panda",
+  "panda.config.mjs": "panda",
+  "panda.config.mts": "panda",
+  "panda.config.ts": "panda",
+  "payload.config.js": "payload",
+  "payload.config.mjs": "payload",
+  "payload.config.mts": "payload",
+  "payload.config.ts": "payload",
+  "pdm.toml": "pdm",
   "phpunit-watcher.yml": "phpunit",
+  "phpunit.xml": "phpunit",
   "pklproject.deps.json": "pkl",
+  "playwright-ct.config.cjs": "playwright",
+  "playwright-ct.config.cts": "playwright",
+  "playwright-ct.config.js": "playwright",
+  "playwright-ct.config.mjs": "playwright",
+  "playwright-ct.config.mts": "playwright",
+  "playwright-ct.config.ts": "playwright",
+  "playwright.config.base.cjs": "playwright",
+  "playwright.config.base.cts": "playwright",
+  "playwright.config.base.js": "playwright",
+  "playwright.config.base.mjs": "playwright",
+  "playwright.config.base.mts": "playwright",
+  "playwright.config.base.ts": "playwright",
+  "playwright.config.cjs": "playwright",
+  "playwright.config.cts": "playwright",
+  "playwright.config.js": "playwright",
+  "playwright.config.mjs": "playwright",
+  "playwright.config.mts": "playwright",
+  "playwright.config.ts": "playwright",
+  "plopfile.cjs": "plop",
+  "plopfile.js": "plop",
+  "plopfile.mjs": "plop",
+  "plopfile.ts": "plop",
   "pnpm-lock.yaml": "pnpm",
   "pnpm-workspace.yaml": "pnpm",
+  "pom.xml": "maven",
+  "postcss.config.cjs": "postcss",
+  "postcss.config.cts": "postcss",
+  "postcss.config.js": "postcss",
   "postcss.config.json": "postcss",
+  "postcss.config.json5": "postcss",
+  "postcss.config.jsonc": "postcss",
+  "postcss.config.mjs": "postcss",
+  "postcss.config.mts": "postcss",
+  "postcss.config.toml": "postcss",
+  "postcss.config.ts": "postcss",
   "postcss.config.yaml": "postcss",
   "postcss.config.yml": "postcss",
+  "posthtml.config.cjs": "posthtml",
+  "posthtml.config.cts": "posthtml",
+  "posthtml.config.js": "posthtml",
   "posthtml.config.json": "posthtml",
+  "posthtml.config.json5": "posthtml",
+  "posthtml.config.jsonc": "posthtml",
+  "posthtml.config.mjs": "posthtml",
+  "posthtml.config.mts": "posthtml",
+  "posthtml.config.toml": "posthtml",
+  "posthtml.config.ts": "posthtml",
   "posthtml.config.yaml": "posthtml",
   "posthtml.config.yml": "posthtml",
+  "prettier.config.cjs": "prettier",
+  "prettier.config.cts": "prettier",
+  "prettier.config.js": "prettier",
   "prettier.config.json": "prettier",
+  "prettier.config.json5": "prettier",
+  "prettier.config.jsonc": "prettier",
+  "prettier.config.mjs": "prettier",
+  "prettier.config.mts": "prettier",
+  "prettier.config.toml": "prettier",
+  "prettier.config.ts": "prettier",
   "prettier.config.yaml": "prettier",
   "prettier.config.yml": "prettier",
+  "prisma.config.cjs": "prisma",
+  "prisma.config.cts": "prisma",
+  "prisma.config.js": "prisma",
+  "prisma.config.mjs": "prisma",
+  "prisma.config.mts": "prisma",
+  "prisma.config.ts": "prisma",
   "prisma.yml": "prisma",
   "project.garden.yaml": "garden",
   "project.garden.yml": "garden",
+  "protractor.conf.js": "protractor",
+  "protractor.conf.ts": "protractor",
+  "protractor.config.js": "protractor",
+  "protractor.config.ts": "protractor",
+  "puppeteer.config.cjs": "puppeteer",
+  "puppeteer.config.cts": "puppeteer",
+  "puppeteer.config.js": "puppeteer",
   "puppeteer.config.json": "puppeteer",
+  "puppeteer.config.json5": "puppeteer",
+  "puppeteer.config.jsonc": "puppeteer",
+  "puppeteer.config.mjs": "puppeteer",
+  "puppeteer.config.mts": "puppeteer",
+  "puppeteer.config.toml": "puppeteer",
+  "puppeteer.config.ts": "puppeteer",
   "puppeteer.config.yaml": "puppeteer",
   "puppeteer.config.yml": "puppeteer",
+  "pyproject.toml": "python-misc",
+  "quasar.conf.js": "quasar",
+  "quasar.conf.ts": "quasar",
+  "quasar.config.cjs": "quasar",
+  "quasar.config.js": "quasar",
+  "quasar.config.ts": "quasar",
   "readme": "readme",
   "readme.md": "readme",
+  "readme.rst": "readme",
   "readme.txt": "readme",
+  "release-plz.toml": "rocket",
+  "release.config.cjs": "semantic-release",
+  "release.config.cts": "semantic-release",
+  "release.config.js": "semantic-release",
   "release.config.json": "semantic-release",
+  "release.config.json5": "semantic-release",
+  "release.config.jsonc": "semantic-release",
+  "release.config.mjs": "semantic-release",
+  "release.config.mts": "semantic-release",
+  "release.config.toml": "semantic-release",
+  "release.config.ts": "semantic-release",
   "release.config.yaml": "semantic-release",
   "release.config.yml": "semantic-release",
+  "release.toml": "rocket",
+  "remix.config.js": "remix",
+  "remix.config.ts": "remix",
   "renovate-config.json": "renovate",
   "renovate.json": "renovate",
+  "renovate.json5": "renovate",
   "requirements.txt": "python-misc",
   "roadmap.md": "roadmap",
   "roadmap.txt": "roadmap",
   "robots.txt": "robots",
+  "rolldown.config.cjs": "rolldown",
+  "rolldown.config.cts": "rolldown",
+  "rolldown.config.js": "rolldown",
+  "rolldown.config.mjs": "rolldown",
+  "rolldown.config.mts": "rolldown",
+  "rolldown.config.ts": "rolldown",
+  "rollup-config.js": "rollup",
+  "rollup-config.mjs": "rollup",
+  "rollup-config.ts": "rollup",
+  "rollup.config.base.js": "rollup",
+  "rollup.config.base.mjs": "rollup",
+  "rollup.config.base.ts": "rollup",
+  "rollup.config.common.js": "rollup",
+  "rollup.config.common.mjs": "rollup",
+  "rollup.config.common.ts": "rollup",
+  "rollup.config.dev.js": "rollup",
+  "rollup.config.dev.mjs": "rollup",
+  "rollup.config.dev.ts": "rollup",
+  "rollup.config.js": "rollup",
+  "rollup.config.mjs": "rollup",
+  "rollup.config.prod.js": "rollup",
+  "rollup.config.prod.mjs": "rollup",
+  "rollup.config.prod.ts": "rollup",
+  "rollup.config.prod.vendor.js": "rollup",
+  "rollup.config.prod.vendor.mjs": "rollup",
+  "rollup.config.prod.vendor.ts": "rollup",
+  "rollup.config.ts": "rollup",
   "rome.json": "rome",
+  "route.js": "routing",
+  "route.jsx": "routing",
+  "route.ts": "routing",
+  "route.tsx": "routing",
+  "router.js": "routing",
+  "router.jsx": "routing",
+  "router.ts": "routing",
+  "router.tsx": "routing",
+  "routes.js": "routing",
+  "routes.jsx": "routing",
+  "routes.ts": "routing",
+  "routes.tsx": "routing",
+  "rsbuild.config.cjs": "rstack",
+  "rsbuild.config.cts": "rstack",
+  "rsbuild.config.js": "rstack",
+  "rsbuild.config.mjs": "rstack",
+  "rsbuild.config.mts": "rstack",
+  "rsbuild.config.ts": "rstack",
+  "rslib.config.cjs": "rstack",
+  "rslib.config.cts": "rstack",
+  "rslib.config.js": "rstack",
+  "rslib.config.mjs": "rstack",
+  "rslib.config.mts": "rstack",
+  "rslib.config.ts": "rstack",
+  "rslint.config.cjs": "rstack",
+  "rslint.config.cts": "rstack",
+  "rslint.config.js": "rstack",
+  "rslint.config.mjs": "rstack",
+  "rslint.config.mts": "rstack",
+  "rslint.config.ts": "rstack",
   "rslint.json": "rstack",
+  "rslint.jsonc": "rstack",
+  "rspack.config.cjs": "rstack",
+  "rspack.config.cts": "rstack",
+  "rspack.config.js": "rstack",
+  "rspack.config.mjs": "rstack",
+  "rspack.config.mts": "rstack",
+  "rspack.config.ts": "rstack",
+  "rspress.config.cjs": "rstack",
+  "rspress.config.cts": "rstack",
+  "rspress.config.js": "rstack",
+  "rspress.config.mjs": "rstack",
+  "rspress.config.mts": "rstack",
+  "rspress.config.ts": "rstack",
+  "rstack.config.cjs": "rstack",
+  "rstack.config.cts": "rstack",
+  "rstack.config.js": "rstack",
+  "rstack.config.mjs": "rstack",
+  "rstack.config.mts": "rstack",
+  "rstack.config.ts": "rstack",
+  "rstest.config.cjs": "rstack",
+  "rstest.config.cts": "rstack",
+  "rstest.config.js": "rstack",
+  "rstest.config.mjs": "rstack",
+  "rstest.config.mts": "rstack",
+  "rstest.config.ts": "rstack",
+  "ruff.toml": "ruff",
   "screwdriver.yaml": "screwdriver",
   "screwdriver.yml": "screwdriver",
   "security.md": "lock",
   "security.txt": "lock",
   "semgrep.yml": "semgrep",
+  "sentry.client.config.cjs": "sentry",
+  "sentry.client.config.cts": "sentry",
+  "sentry.client.config.js": "sentry",
+  "sentry.client.config.mjs": "sentry",
+  "sentry.client.config.mts": "sentry",
+  "sentry.client.config.ts": "sentry",
+  "sentry.edge.config.cjs": "sentry",
+  "sentry.edge.config.cts": "sentry",
+  "sentry.edge.config.js": "sentry",
+  "sentry.edge.config.mjs": "sentry",
+  "sentry.edge.config.mts": "sentry",
+  "sentry.edge.config.ts": "sentry",
+  "sentry.server.config.cjs": "sentry",
+  "sentry.server.config.cts": "sentry",
+  "sentry.server.config.js": "sentry",
+  "sentry.server.config.mjs": "sentry",
+  "sentry.server.config.mts": "sentry",
+  "sentry.server.config.ts": "sentry",
+  "serverless.js": "serverless",
   "serverless.json": "serverless",
+  "serverless.ts": "serverless",
   "serverless.yaml": "serverless",
   "serverless.yml": "serverless",
   "skill.md": "skill",
   "snapcraft.yaml": "snapcraft",
   "snapcraft.yml": "snapcraft",
+  "snowpack.config.cjs": "snowpack",
+  "snowpack.config.cts": "snowpack",
+  "snowpack.config.js": "snowpack",
   "snowpack.config.json": "snowpack",
+  "snowpack.config.mjs": "snowpack",
+  "snowpack.config.mts": "snowpack",
+  "snowpack.config.ts": "snowpack",
   "snowpack.deps.json": "snowpack",
+  "sonar-project.properties": "sonarcloud",
   "sonarcloud.yaml": "sonarcloud",
+  "sonarqube.analysis.xml": "sonarcloud",
   "src/bashly-strings.yaml": "bashly-strings",
   "src/bashly-strings.yml": "bashly-strings",
   "src/bashly.yaml": "bashly",
   "src/bashly.yml": "bashly",
   "steadybit.yaml": "steadybit",
   "steadybit.yml": "steadybit",
+  "stencil.config.js": "stencil",
+  "stencil.config.ts": "stencil",
+  "stitches.config.js": "stitches",
+  "stitches.config.ts": "stitches",
+  "stryker.conf.cjs": "stryker",
+  "stryker.conf.js": "stryker",
   "stryker.conf.json": "stryker",
+  "stryker.conf.mjs": "stryker",
+  "stryker.config.cjs": "stryker",
+  "stryker.config.js": "stryker",
   "stryker.config.json": "stryker",
+  "stryker.config.mjs": "stryker",
+  "stylelint.config.cjs": "stylelint",
+  "stylelint.config.cts": "stylelint",
+  "stylelint.config.js": "stylelint",
   "stylelint.config.json": "stylelint",
+  "stylelint.config.json5": "stylelint",
+  "stylelint.config.jsonc": "stylelint",
+  "stylelint.config.mjs": "stylelint",
+  "stylelint.config.mts": "stylelint",
+  "stylelint.config.toml": "stylelint",
+  "stylelint.config.ts": "stylelint",
   "stylelint.config.yaml": "stylelint",
   "stylelint.config.yml": "stylelint",
+  "supabase.js": "supabase",
+  "supabase.py": "supabase",
+  "supabase.ts": "supabase",
+  "svelte.config.cjs": "svelte",
+  "svelte.config.cts": "svelte",
+  "svelte.config.js": "svelte",
+  "svelte.config.mjs": "svelte",
+  "svelte.config.mts": "svelte",
+  "svelte.config.ts": "svelte",
+  "svgo.config.cjs": "svgo",
+  "svgo.config.js": "svgo",
+  "svgo.config.mjs": "svgo",
+  "svgr.config.cjs": "svgr",
+  "svgr.config.cts": "svgr",
+  "svgr.config.js": "svgr",
   "svgr.config.json": "svgr",
+  "svgr.config.json5": "svgr",
+  "svgr.config.jsonc": "svgr",
+  "svgr.config.mjs": "svgr",
+  "svgr.config.mts": "svgr",
+  "svgr.config.toml": "svgr",
+  "svgr.config.ts": "svgr",
   "svgr.config.yaml": "svgr",
   "svgr.config.yml": "svgr",
   "swagger.json": "swagger",
   "swagger.yaml": "swagger",
   "swagger.yml": "swagger",
+  "syncpack.config.cjs": "syncpack",
+  "syncpack.config.cts": "syncpack",
+  "syncpack.config.js": "syncpack",
   "syncpack.config.json": "syncpack",
+  "syncpack.config.json5": "syncpack",
+  "syncpack.config.jsonc": "syncpack",
+  "syncpack.config.mjs": "syncpack",
+  "syncpack.config.mts": "syncpack",
+  "syncpack.config.toml": "syncpack",
+  "syncpack.config.ts": "syncpack",
   "syncpack.config.yaml": "syncpack",
   "syncpack.config.yml": "syncpack",
+  "tailwind.config.cjs": "tailwindcss",
+  "tailwind.config.cts": "tailwindcss",
+  "tailwind.config.js": "tailwindcss",
+  "tailwind.config.mjs": "tailwindcss",
+  "tailwind.config.mts": "tailwindcss",
+  "tailwind.config.ts": "tailwindcss",
+  "tailwind.js": "tailwindcss",
+  "tailwind.ts": "tailwindcss",
   "taskfile.dist.yaml": "taskfile",
   "taskfile.dist.yml": "taskfile",
   "taskfile.yaml": "taskfile",
@@ -812,10 +1626,22 @@ export const FILE_NAMES: Record<string, string> = {
   "tauri.linux.conf.json": "tauri",
   "tauri.macos.conf.json": "tauri",
   "tauri.windows.conf.json": "tauri",
+  "taze.config.cjs": "taze",
+  "taze.config.cts": "taze",
+  "taze.config.js": "taze",
+  "taze.config.mjs": "taze",
+  "taze.config.mts": "taze",
+  "taze.config.ts": "taze",
   "timeline.md": "roadmap",
   "timeline.txt": "roadmap",
   "todo.md": "todo",
   "todos.md": "todo",
+  "trigger.config.cjs": "trigger",
+  "trigger.config.cts": "trigger",
+  "trigger.config.js": "trigger",
+  "trigger.config.mjs": "trigger",
+  "trigger.config.mts": "trigger",
+  "trigger.config.ts": "trigger",
   "tsconfig.app.json": "tsconfig",
   "tsconfig.base.json": "tsconfig",
   "tsconfig.build.json": "tsconfig",
@@ -846,38 +1672,427 @@ export const FILE_NAMES: Record<string, string> = {
   "tsconfig.webworker.json": "tsconfig",
   "tsconfig.worker.json": "tsconfig",
   "tsdoc.json": "tsdoc",
+  "tsdown.config.cjs": "tsdown",
+  "tsdown.config.cts": "tsdown",
+  "tsdown.config.js": "tsdown",
   "tsdown.config.json": "tsdown",
+  "tsdown.config.mjs": "tsdown",
+  "tsdown.config.mts": "tsdown",
+  "tsdown.config.ts": "tsdown",
   "turbo.json": "turborepo",
+  "turbo.jsonc": "turborepo",
+  "typedoc.js": "typedoc",
   "typedoc.json": "typedoc",
+  "typst.toml": "typst",
   "unlicense.txt": "unlicense",
+  "uno.config.js": "unocss",
+  "uno.config.mjs": "unocss",
+  "uno.config.mts": "unocss",
+  "uno.config.ts": "unocss",
+  "unocss.config.js": "unocss",
+  "unocss.config.mjs": "unocss",
+  "unocss.config.mts": "unocss",
+  "unocss.config.ts": "unocss",
+  "uv.toml": "uv",
+  "velite.config.cjs": "velite",
+  "velite.config.cts": "velite",
+  "velite.config.js": "velite",
+  "velite.config.mjs": "velite",
+  "velite.config.mts": "velite",
+  "velite.config.ts": "velite",
   "vercel.json": "vercel",
+  "vercel.ts": "vercel",
   "verdaccio.yml": "verdaccio",
+  "vetur.config.js": "vue-config",
+  "vetur.config.ts": "vue-config",
+  "vite.config.cjs": "vite",
+  "vite.config.cts": "vite",
+  "vite.config.js": "vite",
+  "vite.config.mjs": "vite",
+  "vite.config.mts": "vite",
+  "vite.config.ts": "vite",
+  "vitest.config.cjs": "vitest",
+  "vitest.config.cts": "vitest",
+  "vitest.config.js": "vitest",
+  "vitest.config.mjs": "vitest",
+  "vitest.config.mts": "vitest",
+  "vitest.config.ts": "vitest",
+  "vitest.e2e.config.cjs": "vitest",
+  "vitest.e2e.config.cts": "vitest",
+  "vitest.e2e.config.js": "vitest",
+  "vitest.e2e.config.mjs": "vitest",
+  "vitest.e2e.config.mts": "vitest",
+  "vitest.e2e.config.ts": "vitest",
+  "vitest.unit.config.cjs": "vitest",
+  "vitest.unit.config.cts": "vitest",
+  "vitest.unit.config.js": "vitest",
+  "vitest.unit.config.mjs": "vitest",
+  "vitest.unit.config.mts": "vitest",
+  "vitest.unit.config.ts": "vitest",
+  "vitest.workspace.cjs": "vitest",
+  "vitest.workspace.cts": "vitest",
+  "vitest.workspace.js": "vitest",
+  "vitest.workspace.mjs": "vitest",
+  "vitest.workspace.mts": "vitest",
+  "vitest.workspace.ts": "vitest",
+  "volar.config.js": "vue-config",
   "vpkg.json": "vlang",
+  "vue.config.cjs": "vue-config",
+  "vue.config.js": "vue-config",
+  "vue.config.mjs": "vue-config",
+  "vue.config.ts": "vue-config",
+  "wallaby.conf.js": "wallaby",
+  "wallaby.js": "wallaby",
+  "wally.toml": "wally",
   "warp.md": "warp",
+  "webpack.base.cjs": "webpack",
+  "webpack.base.cts": "webpack",
+  "webpack.base.js": "webpack",
+  "webpack.base.mjs": "webpack",
+  "webpack.base.mts": "webpack",
+  "webpack.base.ts": "webpack",
+  "webpack.cjs": "webpack",
+  "webpack.client.cjs": "webpack",
+  "webpack.client.cts": "webpack",
+  "webpack.client.js": "webpack",
+  "webpack.client.mjs": "webpack",
+  "webpack.client.mts": "webpack",
+  "webpack.client.ts": "webpack",
+  "webpack.common.cjs": "webpack",
+  "webpack.common.cts": "webpack",
+  "webpack.common.js": "webpack",
+  "webpack.common.mjs": "webpack",
+  "webpack.common.mts": "webpack",
+  "webpack.common.ts": "webpack",
+  "webpack.config.babel.cjs": "webpack",
+  "webpack.config.babel.cts": "webpack",
+  "webpack.config.babel.js": "webpack",
+  "webpack.config.babel.mjs": "webpack",
+  "webpack.config.babel.mts": "webpack",
+  "webpack.config.babel.ts": "webpack",
+  "webpack.config.base.babel.cjs": "webpack",
+  "webpack.config.base.babel.cts": "webpack",
+  "webpack.config.base.babel.js": "webpack",
+  "webpack.config.base.babel.mjs": "webpack",
+  "webpack.config.base.babel.mts": "webpack",
+  "webpack.config.base.babel.ts": "webpack",
+  "webpack.config.base.cjs": "webpack",
+  "webpack.config.base.cts": "webpack",
+  "webpack.config.base.js": "webpack",
+  "webpack.config.base.mjs": "webpack",
+  "webpack.config.base.mts": "webpack",
+  "webpack.config.base.ts": "webpack",
+  "webpack.config.cjs": "webpack",
+  "webpack.config.client.cjs": "webpack",
+  "webpack.config.client.cts": "webpack",
+  "webpack.config.client.js": "webpack",
+  "webpack.config.client.mjs": "webpack",
+  "webpack.config.client.mts": "webpack",
+  "webpack.config.client.ts": "webpack",
+  "webpack.config.common.babel.cjs": "webpack",
+  "webpack.config.common.babel.cts": "webpack",
+  "webpack.config.common.babel.js": "webpack",
+  "webpack.config.common.babel.mjs": "webpack",
+  "webpack.config.common.babel.mts": "webpack",
+  "webpack.config.common.babel.ts": "webpack",
+  "webpack.config.common.cjs": "webpack",
+  "webpack.config.common.cts": "webpack",
+  "webpack.config.common.js": "webpack",
+  "webpack.config.common.mjs": "webpack",
+  "webpack.config.common.mts": "webpack",
+  "webpack.config.common.ts": "webpack",
+  "webpack.config.cts": "webpack",
+  "webpack.config.dev.babel.cjs": "webpack",
+  "webpack.config.dev.babel.cts": "webpack",
+  "webpack.config.dev.babel.js": "webpack",
+  "webpack.config.dev.babel.mjs": "webpack",
+  "webpack.config.dev.babel.mts": "webpack",
+  "webpack.config.dev.babel.ts": "webpack",
+  "webpack.config.dev.cjs": "webpack",
+  "webpack.config.dev.cts": "webpack",
+  "webpack.config.dev.js": "webpack",
+  "webpack.config.dev.mjs": "webpack",
+  "webpack.config.dev.mts": "webpack",
+  "webpack.config.dev.ts": "webpack",
+  "webpack.config.js": "webpack",
+  "webpack.config.main.cjs": "webpack",
+  "webpack.config.main.cts": "webpack",
+  "webpack.config.main.js": "webpack",
+  "webpack.config.main.mjs": "webpack",
+  "webpack.config.main.mts": "webpack",
+  "webpack.config.main.ts": "webpack",
+  "webpack.config.mjs": "webpack",
+  "webpack.config.mts": "webpack",
+  "webpack.config.prod.babel.cjs": "webpack",
+  "webpack.config.prod.babel.cts": "webpack",
+  "webpack.config.prod.babel.js": "webpack",
+  "webpack.config.prod.babel.mjs": "webpack",
+  "webpack.config.prod.babel.mts": "webpack",
+  "webpack.config.prod.babel.ts": "webpack",
+  "webpack.config.prod.cjs": "webpack",
+  "webpack.config.prod.cts": "webpack",
+  "webpack.config.prod.js": "webpack",
+  "webpack.config.prod.mjs": "webpack",
+  "webpack.config.prod.mts": "webpack",
+  "webpack.config.prod.ts": "webpack",
+  "webpack.config.production.babel.cjs": "webpack",
+  "webpack.config.production.babel.cts": "webpack",
+  "webpack.config.production.babel.js": "webpack",
+  "webpack.config.production.babel.mjs": "webpack",
+  "webpack.config.production.babel.mts": "webpack",
+  "webpack.config.production.babel.ts": "webpack",
+  "webpack.config.production.cjs": "webpack",
+  "webpack.config.production.cts": "webpack",
+  "webpack.config.production.js": "webpack",
+  "webpack.config.production.mjs": "webpack",
+  "webpack.config.production.mts": "webpack",
+  "webpack.config.production.ts": "webpack",
+  "webpack.config.renderer.cjs": "webpack",
+  "webpack.config.renderer.cts": "webpack",
+  "webpack.config.renderer.js": "webpack",
+  "webpack.config.renderer.mjs": "webpack",
+  "webpack.config.renderer.mts": "webpack",
+  "webpack.config.renderer.ts": "webpack",
+  "webpack.config.server.cjs": "webpack",
+  "webpack.config.server.cts": "webpack",
+  "webpack.config.server.js": "webpack",
+  "webpack.config.server.mjs": "webpack",
+  "webpack.config.server.mts": "webpack",
+  "webpack.config.server.ts": "webpack",
+  "webpack.config.staging.babel.cjs": "webpack",
+  "webpack.config.staging.babel.cts": "webpack",
+  "webpack.config.staging.babel.js": "webpack",
+  "webpack.config.staging.babel.mjs": "webpack",
+  "webpack.config.staging.babel.mts": "webpack",
+  "webpack.config.staging.babel.ts": "webpack",
+  "webpack.config.staging.cjs": "webpack",
+  "webpack.config.staging.cts": "webpack",
+  "webpack.config.staging.js": "webpack",
+  "webpack.config.staging.mjs": "webpack",
+  "webpack.config.staging.mts": "webpack",
+  "webpack.config.staging.ts": "webpack",
+  "webpack.config.test.cjs": "webpack",
+  "webpack.config.test.cts": "webpack",
+  "webpack.config.test.js": "webpack",
+  "webpack.config.test.mjs": "webpack",
+  "webpack.config.test.mts": "webpack",
+  "webpack.config.test.ts": "webpack",
+  "webpack.config.ts": "webpack",
+  "webpack.config.vendor.cjs": "webpack",
+  "webpack.config.vendor.cts": "webpack",
+  "webpack.config.vendor.js": "webpack",
+  "webpack.config.vendor.mjs": "webpack",
+  "webpack.config.vendor.mts": "webpack",
+  "webpack.config.vendor.production.cjs": "webpack",
+  "webpack.config.vendor.production.cts": "webpack",
+  "webpack.config.vendor.production.js": "webpack",
+  "webpack.config.vendor.production.mjs": "webpack",
+  "webpack.config.vendor.production.mts": "webpack",
+  "webpack.config.vendor.production.ts": "webpack",
+  "webpack.config.vendor.ts": "webpack",
+  "webpack.cts": "webpack",
+  "webpack.dev.cjs": "webpack",
+  "webpack.dev.cts": "webpack",
+  "webpack.dev.js": "webpack",
+  "webpack.dev.mjs": "webpack",
+  "webpack.dev.mts": "webpack",
+  "webpack.dev.ts": "webpack",
+  "webpack.development.cjs": "webpack",
+  "webpack.development.cts": "webpack",
+  "webpack.development.js": "webpack",
+  "webpack.development.mjs": "webpack",
+  "webpack.development.mts": "webpack",
+  "webpack.development.ts": "webpack",
+  "webpack.dist.cjs": "webpack",
+  "webpack.dist.cts": "webpack",
+  "webpack.dist.js": "webpack",
+  "webpack.dist.mjs": "webpack",
+  "webpack.dist.mts": "webpack",
+  "webpack.dist.ts": "webpack",
+  "webpack.js": "webpack",
+  "webpack.mix.cjs": "webpack",
+  "webpack.mix.cts": "webpack",
+  "webpack.mix.js": "webpack",
+  "webpack.mix.mjs": "webpack",
+  "webpack.mix.mts": "webpack",
+  "webpack.mix.ts": "webpack",
+  "webpack.mjs": "webpack",
+  "webpack.mts": "webpack",
+  "webpack.prod.cjs": "webpack",
+  "webpack.prod.config.cjs": "webpack",
+  "webpack.prod.config.cts": "webpack",
+  "webpack.prod.config.js": "webpack",
+  "webpack.prod.config.mjs": "webpack",
+  "webpack.prod.config.mts": "webpack",
+  "webpack.prod.config.ts": "webpack",
+  "webpack.prod.cts": "webpack",
+  "webpack.prod.js": "webpack",
+  "webpack.prod.mjs": "webpack",
+  "webpack.prod.mts": "webpack",
+  "webpack.prod.ts": "webpack",
+  "webpack.production.cjs": "webpack",
+  "webpack.production.cts": "webpack",
+  "webpack.production.js": "webpack",
+  "webpack.production.mjs": "webpack",
+  "webpack.production.mts": "webpack",
+  "webpack.production.ts": "webpack",
+  "webpack.server.cjs": "webpack",
+  "webpack.server.cts": "webpack",
+  "webpack.server.js": "webpack",
+  "webpack.server.mjs": "webpack",
+  "webpack.server.mts": "webpack",
+  "webpack.server.ts": "webpack",
+  "webpack.test.cjs": "webpack",
+  "webpack.test.cts": "webpack",
+  "webpack.test.js": "webpack",
+  "webpack.test.mjs": "webpack",
+  "webpack.test.mts": "webpack",
+  "webpack.test.ts": "webpack",
+  "webpack.ts": "webpack",
+  "webpackfile.cjs": "webpack",
+  "webpackfile.cts": "webpack",
+  "webpackfile.js": "webpack",
+  "webpackfile.mjs": "webpack",
+  "webpackfile.mts": "webpack",
+  "webpackfile.ts": "webpack",
   "werf-giterminism.yaml": "werf",
   "werf-giterminism.yml": "werf",
   "werf-includes.yaml": "werf",
   "werf-includes.yml": "werf",
   "werf.yaml": "werf",
   "werf.yml": "werf",
+  "windi.config.cjs": "windicss",
+  "windi.config.cts": "windicss",
+  "windi.config.js": "windicss",
   "windi.config.json": "windicss",
+  "windi.config.ts": "windicss",
   "wrangler.json": "wrangler",
+  "wrangler.jsonc": "wrangler",
+  "wrangler.toml": "wrangler",
+  "wxt.config.cjs": "wxt",
+  "wxt.config.cts": "wxt",
+  "wxt.config.js": "wxt",
+  "wxt.config.mjs": "wxt",
+  "wxt.config.mts": "wxt",
+  "wxt.config.ts": "wxt",
   "xamlstyler.json": "xaml",
+  "xmake.lua": "xmake",
+  "yarn-error.log": "yarn",
   "zeabur.json": "zeabur",
+  "zeabur.json5": "zeabur",
+  "zeabur.jsonc": "zeabur",
+  "zeabur.toml": "zeabur",
   "zeabur.yaml": "zeabur",
   "zeabur.yml": "zeabur",
 }
 
 /** Extension associations (already lower-cased), matched on the longest dotted suffix. */
 export const FILE_EXTENSIONS: Record<string, string> = {
+  "adoc": "asciidoc",
+  "asciidoc": "asciidoc",
+  "asm": "assembly",
+  "astro": "astro",
+  "bash": "console",
+  "bat": "console",
+  "c": "c",
+  "cc": "cpp",
+  "cfg": "settings",
+  "cjs": "javascript",
+  "clj": "clojure",
+  "cljs": "clojure",
+  "cmake": "cmake",
+  "cmd": "console",
+  "conf": "settings",
+  "cpp": "cpp",
+  "cs": "csharp",
+  "css": "css",
   "csv": "table",
+  "cts": "typescript",
+  "cxx": "cpp",
+  "dart": "dart",
+  "diff": "diff",
+  "elm": "elm",
+  "env": "tune",
+  "erl": "erlang",
+  "ex": "elixir",
+  "exs": "elixir",
+  "fish": "console",
+  "fs": "fsharp",
+  "fsx": "fsharp",
+  "go": "go",
+  "gql": "graphql",
+  "gradle": "gradle",
+  "graphql": "graphql",
+  "groovy": "groovy",
+  "h": "h",
+  "hcl": "hcl",
+  "hh": "hpp",
+  "hpp": "hpp",
+  "hs": "haskell",
+  "htm": "html",
+  "html": "html",
+  "ini": "settings",
+  "java": "java",
+  "jl": "julia",
+  "js": "javascript",
   "json": "json",
+  "json5": "json",
+  "jsonc": "json",
   "jsonl": "json",
+  "jsx": "react",
+  "kt": "kotlin",
+  "kts": "kotlin",
+  "less": "less",
+  "log": "log",
+  "lua": "lua",
   "markdown": "markdown",
   "md": "markdown",
+  "mdx": "mdx",
+  "mjs": "javascript",
+  "mk": "makefile",
+  "mts": "typescript",
+  "ndjson": "json",
+  "nim": "nim",
+  "nix": "nix",
+  "patch": "git",
+  "php": "php",
+  "pl": "prolog",
+  "pm": "perl",
+  "properties": "settings",
+  "ps1": "powershell",
+  "psm1": "powershell",
+  "py": "python",
+  "r": "r",
+  "rb": "ruby",
+  "rs": "rust",
+  "rst": "markdown",
+  "s": "assembly",
+  "sass": "sass",
+  "scala": "scala",
+  "scss": "sass",
+  "sh": "console",
+  "sol": "solidity",
+  "sql": "database",
+  "styl": "stylus",
+  "svelte": "svelte",
+  "svg": "svg",
+  "swift": "swift",
+  "tex": "tex",
+  "tf": "terraform",
+  "toml": "toml",
+  "ts": "typescript",
+  "tsv": "table",
+  "tsx": "react_ts",
   "txt": "document",
+  "v": "vlang",
+  "vim": "vim",
+  "vue": "vue",
+  "xhtml": "html",
+  "xml": "xml",
   "yaml": "yaml",
   "yml": "yaml",
+  "zig": "zig",
+  "zsh": "console",
 }
 
 /** Folder-name associations for a closed folder. */

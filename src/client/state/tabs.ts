@@ -178,6 +178,36 @@ export function renameEntry<T extends { path: string, name: string }>(
 }
 
 /**
+ * Which tabs a "close all" gesture closes, and which one stays drawn.
+ *
+ * The gesture is the whole strip at once, but not unconditionally: closing writes
+ * every dirty tab first, and a write that was refused keeps its tab open — closing
+ * it would leave the author's sentence nowhere but the error banner. So the plan
+ * can be "all but the one that could not be written".
+ *
+ * The page after it follows the same reading as a single close: a drawn tab that
+ * closes hands the editor to a tab that stayed; a drawn tab that stays (because its
+ * write was refused, or it was opened while the writes were in flight) keeps the
+ * page. With nothing kept, the editor is empty.
+ * @param files - the open files, **before** the close, in tab order.
+ * @param refused - the paths whose write was refused; those tabs stay.
+ * @param active - the tab that is drawn now.
+ * @returns the paths to close, and the path to draw afterwards.
+ */
+export function planCloseAll(
+  files: readonly OpenFile[],
+  refused: ReadonlySet<string>,
+  active: string | undefined,
+): { close: string[], active: string | undefined } {
+  const close = files.filter(file => !refused.has(file.path)).map(file => file.path)
+  // `active` may name a tab opened after the gesture started: that one is not in
+  // `close`, so the page simply keeps it.
+  if (active !== undefined && !close.includes(active)) return { close, active }
+  const kept = files.filter(file => refused.has(file.path)).map(file => file.path)
+  return { close, active: kept[0] }
+}
+
+/**
  * Which tab should be drawn after one closes.
  *
  * Closing a tab the author is not looking at leaves the selection alone. Closing

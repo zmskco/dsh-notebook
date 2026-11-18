@@ -50,6 +50,7 @@ import {
   openFile,
   PAGE_ID,
   patchFile,
+  planCloseAll,
   rekeyFile,
   renameEntry,
   tabElementId,
@@ -64,7 +65,7 @@ import {
   SIZE_STEPS,
 } from '../state/editor-prefs'
 import type { EditorPrefs, FontId, PaperId } from '../state/editor-prefs'
-import { ChatIcon, DeleteIcon, FilePlusIcon, FolderPlusIcon, RefreshIcon, RenameIcon, RevealIcon } from '../glyphs'
+import { ChatIcon, CloseAllIcon, DeleteIcon, FilePlusIcon, FolderPlusIcon, RefreshIcon, RenameIcon, RevealIcon } from '../glyphs'
 import { TreeIcon } from '../icons/material'
 import type { ProjectFileEntry } from '../../host/types'
 import type { StringKey, T } from '../strings'
@@ -140,6 +141,21 @@ export { PAGE_ID, tabElementId }
 
 export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onToggleChat, prefs, onPrefsChange }: NotebookTabProps): React.ReactElement {
   const [files, setFiles] = useState<ProjectFileEntry[]>([])
+  /**
+   * Whether the Host's listing stopped at its entry cap.
+   *
+   * Shown in the tree rather than swallowed: a capped listing drawn as a complete
+   * one is how a large workspace looks like a lost one.
+   */
+  const [truncated, setTruncated] = useState(false)
+  /**
+   * The file the author asked to open that the editor cannot preview.
+   *
+   * Clicking a binary row has to answer something: an error banner would read like
+   * a bug, and silence like a broken click. The panel names the file and why, in
+   * the place the page would have been.
+   */
+  const [unsupported, setUnsupported] = useState<{ path: string, name: string, bytes: number } | undefined>(undefined)
   /**
    * Directories the tree has open.
    *
@@ -251,7 +267,11 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
 
   const loadFiles = useCallback(async () => {
     try {
-      setFiles((await api.files(WORKSPACE_PROJECT)).files)
+      const listing = await api.files(WORKSPACE_PROJECT)
+      setFiles(listing.files)
+      // The Host stops at an entry cap; saying so is the difference between "your
+      // workspace is big" and "the panel lost your files".
+      setTruncated(listing.truncated === true)
       setError(undefined)
     } catch (cause: unknown) {
       setError(messageOf(cause))
@@ -501,6 +521,33 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   }, [save])
 
   /**
+   * Close every open tab, writing the dirty ones first.
+   *
+   * The rule is the one a hand close already follows (`closeTab`), applied to the
+   * whole strip: **every** buffer with unsaved changes is written before anything
+   * disappears, so the band empties once instead of losing tabs one at a time while
+   * the writes land, and a refused write keeps its tab open — that sentence has
+   * nowhere else to live. Which tabs that leaves, and which one is drawn afterwards,
+   * is `planCloseAll`'s decision: it is pure, and the artifact check drives it as
+   * data.
+   *
+   * The landing is worked out from the tab drawn **when the close lands**, not from
+   * the one drawn when the button was pressed: the writes take a round trip each,
+   * and the author may have switched tabs in the meantime.
+   */
+  const closeAll = useCallback(async (): Promise<void> => {
+    const files = openRef.current
+    if (files.length === 0) return
+    const refused = new Set<string>()
+    for (const file of files) {
+      if (file.dirty && !(await save(file.path))) refused.add(file.path)
+    }
+    const leaving = new Set(planCloseAll(files, refused, active).close)
+    setOpen(current => current.filter(file => !leaving.has(file.path)))
+    setActive(previous => planCloseAll(files, refused, previous).active)
+  }, [active, save])
+
+  /**
    * Change one tab's buffer.
    *
    * Every keystroke goes through here. The tab keeps its own text, and nothing
@@ -553,6 +600,15 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
     // The drawn file is also the entry the heading's edit actions name, whether it
     // was opened from the tree, brought forward from the strip, or just created.
     setCursor(path)
+    // A file the editor cannot preview answers in the page's place instead of
+    // opening a tab that could never hold it. Rename, delete and "reveal" still
+    // apply to it — the cursor was set above — so the row is not a dead end.
+    const entry = files.find(item => item.path === path)
+    if (entry !== undefined && entry.kind === 'binary') {
+      setUnsupported({ path, name: entry.name, bytes: entry.bytes })
+      return
+    }
+    setUnsupported(undefined)
     const leaving = active === undefined ? undefined : findFile(openRef.current, active)
     if (leaving !== undefined && leaving.dirty && leaving.path !== path) void save(leaving.path)
     if (findFile(openRef.current, path) === undefined) {
@@ -562,7 +618,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
       void loadInto(path)
     }
     setActive(path)
-  }, [active, loadInto, save])
+  }, [active, files, loadInto, save])
 
   // Whatever is drawn must be visible: a highlighted row inside a collapsed folder
   // is a selection the author cannot see, which reads as "nothing is open". The
@@ -962,14 +1018,22 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
           // rows would read as "two files are open in the same place".
           'data-active': node.path === active,
           'data-open': findFile(open, node.path) === undefined ? 'false' : 'true',
-          title: node.path,
+          // A file the editor cannot open is still a file: it is listed, marked, and
+          // clickable (the click explains why there is no page for it).
+          'data-binary': node.binary ? 'true' : 'false',
+          title: node.binary ? `${node.path} — ${t('notPreviewable')}` : node.path,
           style: { paddingLeft: indent },
           ...triggerProps(entryTarget(node), { stop: true }),
           onClick: () => { choose(node.path) },
         },
+        // A binary row keeps the theme's own artwork for its type: the tree says
+        // what the file *is* even when it cannot show the file.
         React.createElement(TreeIcon, { name: node.name }),
         React.createElement('span', { className: 'dsh-notebook-itemName' }, node.name),
-        React.createElement('span', { className: 'dsh-notebook-count' }, formatBytes(node.bytes)))))
+        // The size for a file the panel will not open, and the word that explains
+        // the click before it happens; a text file keeps its plain byte count.
+        React.createElement('span', { className: 'dsh-notebook-count' },
+          node.binary ? `${formatBytes(node.bytes)} · ${t('notPreviewable')}` : formatBytes(node.bytes)))))
     }
   }
   pushRows(tree, 0)
@@ -1097,7 +1161,17 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   },
     header,
     // No "this directory is empty" line: an empty workspace renders as an empty
-    // list, and the heading's icons above are the answer.
+    // list, and the heading's icons above are the answer. A **truncated** listing
+    // does get one: the tree is then a part of the workspace, and a partial tree
+    // drawn as a whole is how a large folder looks like a lost one.
+    truncated
+      ? React.createElement('div', {
+        className: 'dsh-notebook-truncated',
+        role: 'status',
+        title: t('truncatedDetail'),
+      }, React.createElement('div', { className: 'dsh-notebook-warnTitle' }, t('truncatedTitle')),
+      React.createElement('div', { className: 'dsh-notebook-hint' }, t('truncatedDetail')))
+      : null,
     React.createElement('ul', { className: 'dsh-notebook-list dsh-notebook-scroll' }, rows),
   )
 
@@ -1282,21 +1356,60 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
    */
   const editor = React.createElement('div', { className: 'dsh-notebook-pane dsh-notebook-main', onKeyDown },
     error === undefined ? null : React.createElement('div', { className: 'dsh-notebook-mainError' }, React.createElement(ErrorNote, null, error)),
+    // The click landed on a file the editor cannot preview. It is a **notice**, not
+    // an error: nothing failed, the format is simply one the page does not render.
+    // It sits above the pinned head rather than replacing the page, because the
+    // page still belongs to the tab that is drawn — replacing it would leave the
+    // strip claiming one file while the column showed another.
+    unsupported === undefined
+      ? null
+      : React.createElement('div', { className: 'dsh-notebook-mainError' },
+        React.createElement('div', { className: 'dsh-notebook-notice', role: 'status', 'data-role': 'unpreviewable' },
+          React.createElement('div', { className: 'dsh-notebook-unsupportedTitle' }, t('notPreviewableTitle')),
+          React.createElement('div', { className: 'dsh-notebook-unsupportedBody' },
+            t('notPreviewableDetail').replace('{name}', unsupported.name)),
+          React.createElement('div', { className: 'dsh-notebook-unsupportedPath' },
+            `${formatBytes(unsupported.bytes)} · ${unsupported.path}`),
+          React.createElement(Button, {
+            variant: 'ghost',
+            title: t('dismiss'),
+            attrs: { 'data-action': 'dismiss-notice', 'aria-label': t('dismiss') },
+            onClick: () => { setUnsupported(undefined) },
+          }, t('dismiss')))),
     React.createElement('div', { className: 'dsh-notebook-editorHead' },
       // `Ctrl/Cmd+S` is caught on the whole column (`onKeyDown` above), not on this
       // row: the caret lives in the page underneath the pinned head, so a handler
       // bound to the head alone would never see the key.
+      //
+      // The band ends with the two panel-wide controls, in the order the panel reads:
+      // **close every open document**, then **show or hide the conversation
+      // column**. Neither is a control of one tab, which is why both live here
+      // rather than in the strip: the strip is a set of files, and these act on the
+      // set or on the column beside it.
       //
       // The conversation switch is the **last thing in this band**, at its right end
       // past the pickers. It used to sit in the directory column's heading, beside
       // the create icons — but it hides a column, not a file, so it changes what the
       // panel shows rather than what this column acts on. Here it is the last
       // control on the band that runs across the whole panel, which is where the
-      // panel-wide switches belong. It is outside the scrolling picker row on
-      // purpose: a control pinned to the right edge must not be something you have
-      // to scroll sideways to find.
+      // panel-wide switches belong. Both it and the close-all icon are outside the
+      // scrolling picker row on purpose: a control pinned to the right edge must not
+      // be something you have to scroll sideways to find.
       React.createElement('div', { className: 'dsh-notebook-toolbar' },
         typebar,
+        // Disabled, not hidden, with nothing open — the same rule the directory
+        // heading's two edit actions follow: the band keeps its shape as the author
+        // opens and closes files, and the tooltip still says what the control is.
+        React.createElement(Button, {
+          variant: 'icon',
+          title: t('closeAll'),
+          disabled: open.length === 0,
+          attrs: {
+            'data-action': 'close-all',
+            'aria-label': t('closeAll'),
+          },
+          onClick: () => { void closeAll() },
+        }, React.createElement(CloseAllIcon, {})),
         canChat
           ? React.createElement(Button, {
             variant: 'icon',

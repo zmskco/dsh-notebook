@@ -63,21 +63,43 @@ export type Block =
 export type EditorMode = 'wysiwyg' | 'source'
 
 /**
+ * Extensionless names that are code or configuration, not prose.
+ *
+ * The notebook names a chapter by its title — `第一章`, no suffix — so "no
+ * extension" has to mean "a document" by default. But the tree lists **every**
+ * text file now, and a working directory also holds `Dockerfile`, `Makefile`,
+ * `Gemfile` and friends: those are files whose format is significant and whose
+ * *editing* rewrites them as markdown, so one of them opened in the rendered page
+ * and typed into once would come back out with its line breaks doubled. They open
+ * as source instead. The list is names, not a rule, because there is no rule: an
+ * extensionless name is prose unless it happens to be one of the handful of
+ * well-known build files.
+ */
+const EXTENSIONLESS_CODE_NAMES = new Set([
+  'makefile', 'gnumakefile', 'dockerfile', 'containerfile', 'gemfile', 'rakefile',
+  'procfile', 'vagrantfile', 'jenkinsfile', 'brewfile', 'justfile', 'guardfile',
+  'podfile', 'fastfile', 'appfile', 'berksfile', 'capfile', 'thorfile', 'cakefile',
+  'caddyfile', 'pipfile', 'snakefile', 'kbuild',
+])
+
+/**
  * Whether a path is markdown, which is what the rendered mode reads.
  *
- * Two cases count: `.md` / `.markdown` in any case, and **a name with no
- * extension at all**. The panel names a new file by its title — `第一章`, not
- * `第一章.md` — and a title is a document; opening it as raw source because it
- * lacks a suffix would hide the editor the author asked for. `.json` and the
- * like still open as source: the exception is the *absence* of a suffix, not the
- * presence of an unfamiliar one.
+ * Three cases count: `.md` / `.markdown` in any case, **a name with no extension
+ * at all**, and nothing else. The panel names a new file by its title — `第一章`,
+ * not `第一章.md` — and a title is a document; opening it as raw source because it
+ * lacks a suffix would hide the editor the author asked for. `.json`, `.js` and
+ * the like still open as source: the exception is the *absence* of a suffix, not
+ * the presence of an unfamiliar one — and a known build file such as `Dockerfile`
+ * is refused even that (see {@link EXTENSIONLESS_CODE_NAMES}).
  * @param path - project-relative path, as the file tree spells it.
  * @returns true when the file should open in the rendered editor.
  */
 export function isMarkdownPath(path: string): boolean {
   const name = path.trim().split('/').pop() ?? ''
   if (/\.(?:md|markdown)$/i.test(name)) return true
-  return !/\.[A-Za-z0-9]+$/.test(name)
+  if (/\.[A-Za-z0-9]+$/.test(name)) return false
+  return !EXTENSIONLESS_CODE_NAMES.has(name.toLowerCase())
 }
 
 /**

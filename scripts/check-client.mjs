@@ -167,6 +167,7 @@ const listing = [
   { path: '笔记', name: '笔记', bytes: 0, kind: 'directory' },
   { path: '笔记/第一则', name: '第一则', bytes: 12, kind: 'text' },
   { path: '笔记/第二则', name: '第二则', bytes: 34, kind: 'text' },
+  { path: '笔记/封面.png', name: '封面.png', bytes: 4096, kind: 'binary' },
   { path: '素材', name: '素材', bytes: 0, kind: 'directory' },
   { path: '素材/图片说明.md', name: '图片说明.md', bytes: 5, kind: 'text' },
   { path: 'README', name: 'README', bytes: 7, kind: 'text' },
@@ -192,10 +193,12 @@ check('the root lists every top-level directory',
   rootDirs.map(d => d.name).sort((left, right) => left.localeCompare(right, 'zh-Hans-CN')).join(',') === '笔记,素材',
   rootDirs.map(d => d.name).join(','))
 check('a folder count is recursive, not immediate',
-  rootDirs.find(d => d.name === '笔记').fileCount === 2 && rootDirs.find(d => d.name === '素材').fileCount === 1,
+  // A file the editor cannot open is still one of the folder's files; leaving it
+  // out would make the count disagree with the rows drawn under the folder.
+  rootDirs.find(d => d.name === '笔记').fileCount === 3 && rootDirs.find(d => d.name === '素材').fileCount === 1,
   JSON.stringify(rootDirs))
 check('files inside a folder are listed without the directories',
-  childFiles(listing, '笔记').map(file => file.name).join(',') === '第二则,第一则',
+  childFiles(listing, '笔记').map(file => file.name).join(',') === '第二则,第一则,封面.png',
   childFiles(listing, '笔记').map(file => file.name).join(','))
 check('ordering is numeric, so 第2章 precedes 第10章',
   childFiles(listing, PROJECT_ROOT).map(file => file.name).join(',') === '第2章,第10章,README',
@@ -209,8 +212,65 @@ const noteNode = tree.find(node => node.path === '笔记')
 check('buildTree nests children under their folder',
   noteNode?.children?.some(child => child.path === '笔记/第一则') === true,
   JSON.stringify(noteNode?.children?.map(child => child.path)))
+check('a file that cannot be previewed is a row, not a hole',
+  // The reported bug: the tree hid binaries, so a folder holding an image looked
+  // empty. The node exists and carries the flag the row draws.
+  noteNode?.children?.some(child => child.path === '笔记/封面.png' && child.binary === true) === true,
+  JSON.stringify(noteNode?.children?.map(child => [child.path, child.binary])))
+check('a text file is not marked as binary',
+  noteNode?.children?.every(child => child.path !== '笔记/第一则' || child.binary === false) === true, '')
+check('a folder is never marked as binary',
+  tree.every(node => node.directory === false || node.binary === false), '')
+check('a binary still counts as a file in its folder',
+  countFiles(noteNode) === 3, String(countFiles(noteNode)))
 check('countFiles counts a folder recursively',
-  countFiles(noteNode) === 2, String(countFiles(noteNode)))
+  countFiles(noteNode) === 3, String(countFiles(noteNode)))// --- natural ordering ---------------------------------------------------------------
+// The asked-for case, driven as data: a run of digits is a number, not characters.
+const { compareNames } = exports
+check('a number sorts by value: 9.md before 10.md',
+  compareNames('9.md', '10.md') < 0 && ['10.md', '9.md'].sort(compareNames).join('|') === '9.md|10.md',
+  ['10.md', '9.md'].sort(compareNames).join('|'))
+check('the exact case asked for: 文件名10.md comes after 9.md',
+  compareNames('文件名10.md', '9.md') > 0 && compareNames('9.md', '文件名10.md') < 0,
+  String(compareNames('文件名10.md', '9.md')))
+check('a number inside a Chinese name sorts numerically too',
+  ['笔记10.md', '笔记9.md', '笔记1.md'].sort(compareNames).join('|') === '笔记1.md|笔记9.md|笔记10.md',
+  ['笔记10.md', '笔记9.md', '笔记1.md'].sort(compareNames).join('|'))
+check('chapters read in the order a reader expects',
+  ['第10章', '第2章', '第9章'].sort(compareNames).join('|') === '第2章|第9章|第10章',
+  ['第10章', '第2章', '第9章'].sort(compareNames).join('|'))
+check('zero padding has one fixed order, not "equal"',
+  // `localeCompare`'s numeric option calls 9.md and 09.md equal, which leaves the
+  // two rows free to swap on any re-render.
+  compareNames('9.md', '09.md') < 0 && compareNames('09.md', '9.md') > 0, '')
+check('full-width digits sort as digits',
+  ['１０.md', '9.md'].sort(compareNames).join('|') === '9.md|１０.md',
+  ['１０.md', '9.md'].sort(compareNames).join('|'))
+check('a full-width and a half-width name are still two names',
+  // １０.md and 10.md are two files; folding them for comparison must not make the
+  // sort call them equal and leave their order to the engine.
+  (() => {
+    const wide = '１０.md'
+    const narrow = '10.md'
+    const order = compareNames(wide, narrow)
+    return order !== 0 && Math.sign(order) === -Math.sign(compareNames(narrow, wide))
+  })(), '')
+check('a shorter name sorts before the one that extends it',
+  compareNames('笔记', '笔记2') < 0 && compareNames('脚本.js', '脚本.jsx') < 0, '')
+check('the sort is a total order, so rows cannot swap',
+  // Every pair is decided one way and the reverse the other way.
+  ['10.md', '9.md', '09.md', '笔记10.md', '笔记9.md', '第10章', '第9章', 'b', 'B', 'a1', 'a01']
+    .every((left, index, all) => all.every(right => left === right
+      || (Math.sign(compareNames(left, right)) === -Math.sign(compareNames(right, left))))), '')
+check('two names the locale calls equal still have one order',
+  // A canonically equivalent pair is two files on this side of the comparison, so
+  // the comparator must not answer 0 and leave their order to the engine.
+  (() => {
+    const composed = 'caf\u00e9.md'
+    const decomposed = 'cafe\u0301.md'
+    return compareNames(composed, decomposed) !== 0
+      && Math.sign(compareNames(composed, decomposed)) === -Math.sign(compareNames(decomposed, composed))
+  })(), 'the comparator called two distinct names equal')
 // Depth is drawn as left padding on the row. The row is `width:100%` of its <li>, so
 // the padding must be *inside* that width — otherwise every level made the row wider
 // than the list, the list became horizontally scrollable, and focusing the autofocused
@@ -264,6 +324,19 @@ check('markdown and extensionless names open as a document',
   '')
 check('a markdown file starts in the rendered mode', initialEditorMode('第一则.md') === 'wysiwyg', initialEditorMode('第一则.md'))
 check('a data file starts in source', initialEditorMode('数据.json') === 'source', initialEditorMode('数据.json'))
+check('a source file starts in source, not in the rendered page',
+  // The tree lists code now, so this is where a `.js` file would otherwise land in
+  // ProseMirror and be rewritten as markdown on the first keystroke.
+  initialEditorMode('工具.js') === 'source' && initialEditorMode('app.tsx') === 'source'
+  && initialEditorMode('script.py') === 'source' && !isMarkdownPath('工具.js'),
+  initialEditorMode('工具.js'))
+check('an extensionless build file is source, an extensionless chapter is not',
+  // `第一章` is how this notebook names prose; `Dockerfile` is a format whose bytes
+  // matter, and the rendered page would rewrite them.
+  initialEditorMode('第一章') === 'wysiwyg' && initialEditorMode('Dockerfile') === 'source'
+  && initialEditorMode('Makefile') === 'source' && initialEditorMode('Gemfile') === 'source'
+  && initialEditorMode('dockerfile') === 'source',
+  `${initialEditorMode('第一章')}/${initialEditorMode('Dockerfile')}`)
 check('the mode pair exists for markdown only',
   editorControls(true).toggle === true && editorControls(false).toggle === false, '')
 check('flipping the mode toggles it', nextEditorMode('wysiwyg') === 'source' && nextEditorMode('source') === 'wysiwyg')
@@ -381,16 +454,33 @@ check('a rename carries the cursor with the entry',
   /setCursor\(\(previous\) => previous === renaming\.path \? renamed\.path : previous\)/.test(source), '')
 check('deleting the cursor entry leaves the heading with nothing to act on',
   /setCursor\(\(previous\) => previous !== void 0 && gone\(previous\) \? void 0 : previous\)/.test(source), '')
+check('a binary row is drawn as one: marked, and named in the row',
+  // The row exists; the *label* is what stops the click from being a surprise.
+  // Matched on the emitted form, where the bundler has switched the quotes.
+  source.includes('"data-binary": node.binary ? "true" : "false"')
+  && /node\.binary \? `\$\{formatBytes\(node\.bytes\)\} · \$\{t\("notPreviewable"\)\}`/.test(source),
+  'the binary row carries no marker')
+check('the click on a binary answers instead of opening a tab',
+  // No tab is opened for a file the editor cannot hold; the notice names it.
+  /setUnsupported\(\{\s*path,\s*name: entry\.name,\s*bytes: entry\.bytes\s*\}\)/.test(source),
+  'a binary click would open an empty tab')
+check('the notice is dismissible and says which file it is about',
+  source.includes('"data-role": "unpreviewable"') && source.includes('"data-action": "dismiss-notice"')
+  && /t\("notPreviewableDetail"\)\.replace\("\{name\}", unsupported\.name\)/.test(source), '')
+check('a truncated listing says so above the tree',
+  source.includes('t("truncatedTitle")') && source.includes('t("truncatedDetail")')
+  && source.includes('setTruncated(listing.truncated === true)'), '')
 check('a new file is named in an empty row inside the tree',
   source.includes('dsh-notebook-ghost') && source.includes('dsh-notebook-ghostInput'), '')
 check('the empty row commits on Enter and cancels on Escape',
   source.includes('Escape') && source.includes('isComposing'), '')
 
+
 // --- the editor's tabs ---------------------------------------------------------------
 // The tab model is pure, so the rules that matter are asserted as data: one buffer
 // per open file, a second click activating rather than re-reading, and a close that
 // lands on the neighbouring tab rather than on no tab at all.
-const { closeFile, fileNameOf, findFile, nextActive, openFile, patchFile, TabStrip } = exports
+const { closeFile, fileNameOf, findFile, nextActive, openFile, patchFile, planCloseAll, TabStrip } = exports
 /** The tree's icon component, by another name: the artwork section below binds `TreeIcon`. */
 const TreeRowIcon = exports.TreeIcon
 /** The label rule, checked as data: two chapters can hold a file with one name. */
@@ -430,6 +520,34 @@ check('closing the only tab empties the editor', nextActive(opened, '第一章',
 check('closing removes exactly one tab',
   closeFile(opened, '笔记/素材.md').map(file => file.path).join('|') === '第一章|README.md',
   closeFile(opened, '笔记/素材.md').map(file => file.path).join('|'))
+// "Close all" is a flush followed by one close. The refusal is the whole reason the
+// plan is a decision rather than `files.map`: a page whose write failed must stay, or
+// its sentence would exist only in the error banner.
+check('closing all closes every tab the flush could write',
+  (() => {
+    const plan = planCloseAll(opened, new Set(), '笔记/素材.md')
+    return plan.close.join('|') === '第一章|笔记/素材.md|README.md' && plan.active === undefined
+  })(), JSON.stringify(planCloseAll(opened, new Set(), '笔记/素材.md')))
+check('a refused write keeps its page open',
+  (() => {
+    const plan = planCloseAll(opened, new Set(['笔记/素材.md']), '笔记/素材.md')
+    return plan.close.join('|') === '第一章|README.md' && plan.active === '笔记/素材.md'
+  })(), JSON.stringify(planCloseAll(opened, new Set(['笔记/素材.md']), '笔记/素材.md')))
+check('closing all lands on the drawn page when it is the one that stayed',
+  planCloseAll(opened, new Set(['README.md']), 'README.md').active === 'README.md', '')
+check('closing all lands on the page that could not be written',
+  // The drawn tab went; the only survivor is the refused one, and that is where the
+  // error banner's file should be on screen.
+  (() => {
+    const plan = planCloseAll(opened, new Set(['README.md']), '第一章')
+    return plan.close.join('|') === '第一章|笔记/素材.md' && plan.active === 'README.md'
+  })(), JSON.stringify(planCloseAll(opened, new Set(['README.md']), '第一章')))
+check('a tab opened while the writes were in flight is not closed, and keeps the page',
+  // `active` may name a tab that was not in the snapshot; the plan leaves it alone.
+  (() => {
+    const plan = planCloseAll(opened, new Set(), '新章')
+    return plan.close.join('|') === '第一章|笔记/素材.md|README.md' && plan.active === '新章'
+  })(), JSON.stringify(planCloseAll(opened, new Set(), '新章')))
 
 // The strip draws each tab from the file name it stands for, through the same
 // `TreeIcon` the tree uses — so a `.md` chapter looks the same in both lists.
@@ -529,18 +647,66 @@ check('the editor head holds the toolbar above the tabs',
     const strip = children.findIndex(child => child?.type === TabStrip)
     return typebar >= 0 && strip === typebar + 1
   })(), 'the tab strip is not under the toolbar')
-check('the conversation switch ends the editor header, at its right edge',
+check('the conversation switch ends the editor header, just after close-all',
   (() => {
     const toolbar = findIn(column, element => String(element.props?.className ?? '') === 'dsh-notebook-toolbar')
     if (toolbar === undefined) return false
     const children = [toolbar.props?.children].flat().filter(child => child !== null && child !== undefined)
-    const last = children.at(-1)
-    // Last child, and after the pickers: the switch is the panel-wide control at the
-    // right end of the band, not another document control.
-    return last?.props?.attrs?.['data-action'] === 'toggle-chat'
-      && children.length === 2
+    // Last two children, after the pickers: the two panel-wide controls, with the
+    // switch at the very edge — closing the files is not a document control either,
+    // but it is nearer the documents than the column switch is.
+    return children.at(-2)?.props?.attrs?.['data-action'] === 'close-all'
+      && children.at(-1)?.props?.attrs?.['data-action'] === 'toggle-chat'
+      && children.length === 3
       && String(children[0]?.props?.className ?? '').includes('typebar')
-  })(), 'the switch is not the last thing in the editor toolbar')
+  })(), 'the two switches are not the end of the editor toolbar')
+check('close-all is disabled with no file open, rather than hidden',
+  (() => {
+    const toolbar = findIn(column, element => String(element.props?.className ?? '') === 'dsh-notebook-toolbar')
+    const buttons = toolbar?.props?.children?.flat?.() ?? []
+    const button = buttons.find(child => child?.props?.attrs?.['data-action'] === 'close-all')
+    return button?.props?.disabled === true
+      && button?.props?.attrs?.['aria-label'] === 'closeAll'
+      && button?.props?.title === 'closeAll'
+  })(), 'the close-all control is missing its no-file state or its name')
+check('close-all is in the toolbar even when the shell has no conversation seat',
+  (() => {
+    const bare = NotebookTab({
+      t: key => key,
+      side: DEFAULT_LAYOUT.side,
+      onSideResize: () => {},
+      canChat: false,
+      chatVisible: false,
+      onToggleChat: () => {},
+      prefs: { font: 'system', size: 15, paper: 'plain' },
+      onPrefsChange: () => {},
+    })
+    const button = findIn(bare, element => element.props?.attrs?.['data-action'] === 'close-all')
+    // Closing the files is not a feature of the conversation column: it stays when
+    // the shell hands the page no chat seat at all.
+    return button !== undefined && findIn(bare, element => element.props?.attrs?.['data-action'] === 'toggle-chat') === undefined
+  })(), 'the close-all control depends on the chat seat')
+check('close-all is not in the directory column',
+  (() => {
+    const pane = findIn(column, element => String(element.props?.className ?? '').includes('dsh-notebook-side'))
+    if (pane === undefined) return false
+    const inPane = []
+    walk(pane, (element) => {
+      const action = element.props?.['data-action'] ?? element.props?.attrs?.['data-action']
+      if (typeof action === 'string') inPane.push(action)
+    })
+    return !inPane.includes('close-all')
+  })(), 'the close-all control is in the directory column')
+check('close-all writes every dirty tab before it closes any',
+  // The order is the rule: the strip empties once, after every write has been tried,
+  // and only a refused path is left in `refused` for the pure plan to keep. Asserted
+  // on the emitted code, so a formatter collapsing the loop body cannot hide it.
+  (() => {
+    const flush = source.indexOf('refused.add(file.path)')
+    const close = source.indexOf('leaving.has(file.path)')
+    return flush >= 0 && close > flush
+      && source.includes('new Set(planCloseAll(files, refused, active).close)')
+  })(), 'the flush and the close are not in that order')
 
 // --- the tree's right-click menu -------------------------------------------------------
 // DSH provides one shared context menu (`ui-context-menu`), which this plugin extends
@@ -913,6 +1079,21 @@ check('an extension names the kind of text the Host will list',
   iconIdForFile('笔记.md') === 'markdown' && iconIdForFile('poem.txt') === 'document'
   && iconIdForFile('数据.yaml') === 'yaml' && iconIdForFile('log.jsonl') === 'json',
   `${iconIdForFile('笔记.md')}/${iconIdForFile('poem.txt')}`)
+// The tree lists code now, so code gets its own mark instead of the grey sheet: a
+// repository's `src/` is rows of `.js` and `.ts`, and one generic drawing for all of
+// them says less than the language marks every editor already teaches.
+check('a source file is drawn as its language',
+  iconIdForFile('main.js') === 'javascript' && iconIdForFile('app.ts') === 'typescript'
+  && iconIdForFile('view.tsx') === 'react_ts' && iconIdForFile('script.py') === 'python'
+  && iconIdForFile('main.go') === 'go' && iconIdForFile('lib.rs') === 'rust'
+  && iconIdForFile('style.css') === 'css' && iconIdForFile('index.html') === 'html',
+  [iconIdForFile('main.js'), iconIdForFile('app.ts'), iconIdForFile('script.py')].join('/'))
+check('a type with no themed mark keeps the generic sheet',
+  // Vendoring a drawing per language is a size decision, not a correctness one: the
+  // fallback is the theme's own, exactly as VS Code draws an unmatched type. The Host
+  // still lists such a file — the tree's rule is "not binary", not "has an icon".
+  iconIdForFile('notes.zzz') === FALLBACK_FILE
+  && iconIdForFile('归档.zzz') === FALLBACK_FILE, iconIdForFile('notes.zzz'))
 // The one place this panel follows the editor's rule instead of the theme's table: a
 // name with no extension opens as a markdown document here, and that is how a chapter
 // is named by default, so most rows of a novel depend on it. The predicate is the
@@ -1000,9 +1181,16 @@ check('every vendored file drawing is reachable from a real association',
       for (const match of body.matchAll(/: "([^"]+)",/g)) referenced.add(match[1])
     }
     const orphans = ids.filter(id => !id.startsWith('folder-') && id !== 'folder' && !referenced.has(id))
-    return orphans.length === 0 && !ids.includes('typescript') && !ids.includes('image')
+    return orphans.length === 0
   })(),
   'a file drawing no association reaches is being shipped')
+check('the carried drawings are the text types the tree can list',
+  // The mirror image of the rule above: a binary type is refused by the Host, so its
+  // drawing would be an SVG no row can ever carry.
+  ['typescript', 'javascript', 'python', 'rust', 'go'].every(id => ids.includes(id))
+  && ['image', 'video', 'pdf', 'zip', 'font', 'excel', 'powerpoint', 'word']
+    .every(id => !ids.includes(id)),
+  ['image', 'pdf', 'zip'].filter(id => ids.includes(id)).join(','))
 
 // --- names ---------------------------------------------------------------------------
 const { DICTS } = exports
@@ -1016,6 +1204,14 @@ check('both dictionaries carry the same keys',
 check('the action labels are present',
   ['newDir', 'newFile', 'refresh', 'reveal', 'rename', 'delete', 'renameEntry', 'deleteEntry', 'writing', 'source']
     .every(key => typeof zhDict[key] === 'string'), '')
+check('the close-all control is named in both dictionaries',
+  zhDict.closeAll === '关闭所有文件' && DICTS.en.closeAll === 'Close all files',
+  `${String(zhDict.closeAll)}/${String(DICTS.en.closeAll)}`)
+check('the close-all glyph is a circled ×, not the bare cross a tab carries',
+  // Lucide's `circle-x`: the ring is what says "all of them", and the plain × is
+  // already the mark a single tab's close control carries.
+  /createElement\("circle", \{\s*cx: 12,\s*cy: 12,\s*r: 10\s*\}\)/.test(source)
+  && source.includes('"m15 9-6 6"') && source.includes('CloseAllIcon'), '')
 check('the heading\'s two edit labels name their target',
   zhDict.renameEntry.includes('{name}') && zhDict.deleteEntry.includes('{name}')
   && DICTS.en.renameEntry.includes('{name}') && DICTS.en.deleteEntry.includes('{name}'), '')

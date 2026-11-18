@@ -59,12 +59,27 @@ export const zh = {
   /** The tab strip's accessible name; the tabs themselves are file names. */
   openFiles: '打开的文件',
   closeFile: '关闭文件',
+  /** The toolbar's one gesture for the whole strip, not one tab. */
+  closeAll: '关闭所有文件',
   /** Appended to a tab's accessible name when that tab has unsaved changes. */
   unsavedSuffix: '，未保存',
   /** The editor column with no tab open. */
   openHint: '从左侧目录打开一个文件，或点目录标题行的「新建文件」。',
   /** A tab whose file is still being read. */
   loadingFile: '正在读取…',
+  /**
+   * A file the tree lists but the editor cannot open. The row's own suffix, its
+   * tooltip, and the page that takes the click's place — the click is answered,
+   * the file is not hidden.
+   */
+  notPreviewable: '不可预览',
+  notPreviewableTitle: '这个文件不能在这里预览',
+  notPreviewableDetail: '「{name}」是二进制文件（不是文本），笔记本只按文本读写它所在的工作区。文件本身没有被移动或删除，可以用下面的路径在资源管理器里打开。',
+  /** The Host stopped listing at its entry cap; part of the workspace is not shown. */
+  truncatedTitle: '目录太大，只列出了一部分',
+  truncatedDetail: '工作区里的条目超过了单次列出的上限，下面的树是其中的一部分。刷新可以重新读取，但在更大的工作区里建议把不相关的目录移出。',
+  /** Closes a notice the author did not ask for and does not need to keep. */
+  dismiss: '知道了',
   /* The directory tree's right-click menu. */
   rename: '重命名',
   delete: '删除',
@@ -128,9 +143,16 @@ export const en: Record<StringKey, string> = {
   hideChat: 'Hide the conversation',
   openFiles: 'Open files',
   closeFile: 'Close file',
+  closeAll: 'Close all files',
   unsavedSuffix: ', unsaved',
   openHint: 'Open a file from the directory on the left, or use “New file” in its heading.',
   loadingFile: 'Reading…',
+  notPreviewable: 'not previewable',
+  notPreviewableTitle: 'This file cannot be previewed here',
+  notPreviewableDetail: '“{name}” is a binary file, not text, so the notebook cannot read it. The file itself has not been moved or deleted; open it in the file manager with the path below.',
+  truncatedTitle: 'This folder is too large to list in full',
+  truncatedDetail: 'The workspace holds more entries than one listing returns, so the tree below is a part of it. Refreshing reads it again, but a workspace this large is better served by moving unrelated folders out.',
+  dismiss: 'Got it',
   rename: 'Rename',
   delete: 'Delete',
   renameHint: 'Enter to confirm, Esc to cancel',

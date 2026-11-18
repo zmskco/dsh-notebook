@@ -11,11 +11,14 @@
  * `material.generated.ts`. The theme is MIT licensed; its licence text ships
  * beside the artwork and in the package's `files` list.
  *
- * The selection is not the whole theme. This tree only ever lists **text files**
- * — the Host's `isTextFile` allowlist — and every folder, so the generator keeps
- * the drawings those names actually reach and nothing else. That is why there is
- * no TypeScript or image mark here: a `.ts` or `.png` row cannot exist. Folders
- * are curated to the names a workspace of notes grows.
+ * The selection is not the whole theme. This tree lists **every text file** — the
+ * Host refuses only binary types — and every folder, so the generator keeps the
+ * drawings those names and the known text extensions actually reach: prose, data,
+ * markup and the common programming languages (`.js`, `.ts`, `.py`, `.go`, …), and
+ * nothing else. A file whose type the panel does not know still draws the theme's
+ * generic `file` sheet, exactly as VS Code does; what is *not* carried is a
+ * drawing for a type the tree can never list (an image, a font, an archive).
+ * Folders are curated to the names a workspace of notes grows.
  *
  * Three points differ deliberately from the extension:
  *
@@ -25,11 +28,14 @@
  * - **The mapping is total.** The theme leaves unknown files with its generic
  *   `file` drawing and unknown folders with `folder` / `folder-open`; this module
  *   does the same, so a row can never be iconless or broken.
- * - **An extensionless name is a document.** The editor already opens such a name
- *   as markdown (`isMarkdownPath`) and it is how this notebook's prose is named —
- *   `第一章`, not `第一章.md` — so it gets the markdown drawing instead of the
- *   grey sheet. The rule is delegated to `isMarkdownPath` rather than restated, so
- *   the icon and the editor cannot disagree about what a document is.
+ * - **An extensionless name is a document unless it is a build file.** The editor
+ *   opens such a name as markdown (`isMarkdownPath`) and it is how this notebook's
+ *   prose is named — `第一章`, not `第一章.md` — so it gets the markdown drawing
+ *   instead of the grey sheet. `Dockerfile` and `Makefile` are the exceptions the
+ *   editor itself makes, and the icon follows it because the rule is delegated to
+ *   `isMarkdownPath` rather than restated: the icon and the editor cannot disagree
+ *   about what a document is. A name whose type the panel knows (`.js`, `.py`)
+ *   keeps its own mark, because the lookup table is consulted first.
  *
  * Lookup order matches the theme: an exact (case-insensitive) file name first —
  * that is how `package.json` becomes a Node mark and `README.md` a README — then

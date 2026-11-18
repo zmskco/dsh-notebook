@@ -7,7 +7,7 @@
  * caches: the Host is the single source of truth and a stale page is worse than
  * a visible failure.
  */
-import type { FileDocument, NotebookState, ProjectFileEntry } from '../host/types'
+import type { FileDocument, FileListing, NotebookState } from '../host/types'
 
 const API = '/api/notebook'
 
@@ -114,8 +114,16 @@ export const api = {
    */
   focus: (project: string): Promise<{ project: string; dir: string; focused: boolean }> =>
     call<{ project: string; dir: string; focused: boolean }>('focus', {}, { project }),
-  files: (project: string): Promise<{ project: string; files: ProjectFileEntry[] }> =>
-    call<{ project: string; files: ProjectFileEntry[] }>('files', { project }),
+  /**
+   * Read the tree.
+   *
+   * Everything the workspace holds is in it — including files the editor cannot
+   * open, which arrive as `kind: 'binary'` so the panel can say why instead of
+   * leaving the row out. `truncated` says the Host stopped at its entry cap, so a
+   * large workspace is reported as partial rather than as empty.
+   */
+  files: (project: string): Promise<FileListing & { project: string }> =>
+    call<FileListing & { project: string }>('files', { project }),
   file: (project: string, path: string): Promise<FileDocument> => call<FileDocument>('file', { project, path }),
   saveFile: (project: string, path: string, content: string): Promise<FileDocument> =>
     call<FileDocument>('save-file', {}, { project, path, content }),

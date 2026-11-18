@@ -53,21 +53,37 @@ import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /**
- * The extensions the Host lists in the tree.
+ * The known-text extensions the Host lists in the tree, without the leading dot.
  *
  * **This list must mirror `TEXT_EXTENSIONS` in `src/host/story/manuscript.ts`.**
- * The tree shows only text files — the Host's allowlist is what keeps a working
- * directory's images, archives and OS droppings from burying the notes — so a
- * file row can only ever carry a drawing for one of these extensions or for a
- * name with no extension at all. Anything outside that set could be vendored and
- * could never be shown, which is paid for on every page load, so the selection
- * below is derived from this list rather than hand-written.
+ * The Host no longer runs an allowlist — a file with an extension outside this
+ * list is still opened when its bytes are text — but a *known* text type is what
+ * decides which drawings are worth vendoring: an association this list cannot
+ * reach would be an SVG paid for on every page load that no row ever draws. A file
+ * whose type is unknown falls back to the theme's generic `file` drawing, exactly
+ * as it does in VS Code.
  *
  * `scripts/check-client.mjs` reads both lists and fails if they drift apart, so
- * widening the Host's allowlist is what makes more file icons vendorable — not an
- * edit here.
+ * teaching the panel a new file type means editing the Host's list and re-running
+ * this script.
  */
-const HOST_TEXT_EXTENSIONS = ['md', 'markdown', 'txt', 'json', 'jsonl', 'yml', 'yaml', 'csv']
+const HOST_TEXT_EXTENSIONS = [
+  // Prose and documents.
+  'md', 'markdown', 'mdx', 'txt', 'text', 'rst', 'adoc', 'asciidoc', 'tex', 'org',
+  // Data and configuration.
+  'json', 'jsonl', 'jsonc', 'ndjson', 'json5', 'yml', 'yaml', 'toml', 'ini', 'cfg',
+  'conf', 'properties', 'csv', 'tsv', 'xml', 'env', 'diff', 'patch', 'log', 'map',
+  // Markup and style.
+  'html', 'htm', 'xhtml', 'css', 'scss', 'sass', 'less', 'styl', 'svg',
+  // Source code.
+  'js', 'mjs', 'cjs', 'jsx', 'ts', 'mts', 'cts', 'tsx', 'vue', 'svelte', 'astro',
+  'py', 'rb', 'php', 'go', 'rs', 'java', 'kt', 'kts', 'swift', 'scala', 'groovy',
+  'gradle', 'c', 'h', 'cc', 'cpp', 'cxx', 'hpp', 'hh', 'cs', 'fs', 'fsx', 'lua',
+  'r', 'dart', 'ex', 'exs', 'erl', 'hrl', 'hs', 'clj', 'cljs', 'pl', 'pm', 'zig',
+  'nim', 'jl', 'sh', 'bash', 'zsh', 'fish', 'ps1', 'psm1', 'bat', 'cmd', 'sql',
+  'graphql', 'gql', 'tf', 'hcl', 'nix', 'cmake', 'mk', 'asm', 's', 'vim', 'sol',
+  'elm', 'v',
+]
 
 /**
  * The generic drawing every unmatched name falls back to.

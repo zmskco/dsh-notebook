@@ -164,6 +164,26 @@ export function ChatIcon({ size = GLYPH_SIZE }: ChatIconProps): React.ReactEleme
 }
 
 /**
+ * Close every open file: Lucide's `circle-x`.
+ *
+ * The plain `x` is the mark a single tab carries, and on the toolbar it read as
+ * "close this one" — the tooltip had to explain the scope. A circle around it is
+ * the same "close" with the "all of it" reading drawn on: the ring encloses the
+ * whole strip the way the gesture does. Same 24-grid, same 2px stroke, so it still
+ * reads as one family with the conversation switch beside it.
+ *
+ * It sits immediately before that switch, so the two panel-wide controls end the
+ * band: first "close what is open in the editor", then "show or hide the column
+ * beside it".
+ */
+export function CloseAllIcon({ size = GLYPH_SIZE }: PlusIconProps): React.ReactElement {
+  return React.createElement(Glyph, { size },
+    React.createElement('circle', { cx: 12, cy: 12, r: 10 }),
+    React.createElement('path', { d: 'm15 9-6 6' }),
+    React.createElement('path', { d: 'm9 9 6 6' }))
+}
+
+/**
  * The two glyphs the right-click menu adds, and the two the heading now carries
  * too: Lucide's `pencil` and `trash-2`.
  *
