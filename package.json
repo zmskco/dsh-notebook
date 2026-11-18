@@ -69,6 +69,7 @@
     "watch:client": "tsdown --watch",
     "watch:host": "tsc -p tsconfig.host.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.host.json --noEmit && tsc -p tsconfig.json",
+    "prepare": "pnpm run build",
     "prepublishOnly": "npm run build && npm test",
     "pack:check": "npm pack --dry-run"
   },
