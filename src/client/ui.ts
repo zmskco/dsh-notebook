@@ -312,8 +312,25 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 /* The editor itself. Everything under .dsh-notebook-pm is document text: a writer's
    page, not interface chrome — which is why the bare tag selectors below are safe
    (they are scoped to this one class) and why sizes are in em, so the author's
-   size setting scales headings with the body. */
-.dsh-notebook-pm{outline:none;line-height:1.9;min-height:100%}
+   size setting scales headings with the body.
+
+   display:flow-root is not decoration. Without a block formatting context here the
+   first block's top margin **collapsed out of this element** and pushed the whole
+   page down inside the scroll container; together with min-height:100% that made
+   the page exactly 100% + 1.4em tall, so a two-line markdown file starting with
+   a heading showed a scrollbar for content that fit (33px of overflow at the
+   default size 15 — 1.4 x 1.55em). The formatting context contains the margin, so
+   the page's height is its content or the viewport, whichever is larger.
+
+   Note for future edits: this stylesheet is a template literal, so a backtick or
+   "dollar" + brace inside a comment ends it. Dots and dashes only. */
+.dsh-notebook-pm{outline:none;line-height:1.9;min-height:100%;display:flow-root}
+/* No leading margin above the first block and none below the last. The page's
+   padding is its frame, so a margin there is only empty space at the edge of the
+   sheet — and a margin that has nowhere to go is exactly what used to become a
+   scrollbar. */
+.dsh-notebook-pm > :first-child{margin-top:0}
+.dsh-notebook-pm > :last-child{margin-bottom:0}
 .dsh-notebook-pm h1,.dsh-notebook-pm h2,.dsh-notebook-pm h3,.dsh-notebook-pm h4,.dsh-notebook-pm h5,.dsh-notebook-pm h6{margin:1.4em 0 .55em;line-height:1.4;font-weight:600}
 .dsh-notebook-pm h1{font-size:1.55em}
 .dsh-notebook-pm h2{font-size:1.3em}

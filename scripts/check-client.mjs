@@ -975,6 +975,23 @@ check('the page carries no frame of its own',
   /\.dsh-notebook-doc\{[^}]*border:0/.test(css)
   && /\.dsh-notebook-doc\{[^}]*border-radius:0/.test(css)
   && /\.dsh-notebook-editor\{[^}]*padding:0/.test(css), '')
+// The reported bug: a two-line markdown file that starts with `# 标题` scrolled.
+// The cause was margin collapse — the heading's 1.4em top margin left the page
+// element and pushed it down inside the scroll container, which then overflowed by
+// exactly that margin (33px at the default size 15). Asserted at its two causes:
+// the page establishes a formatting context, and its first/last blocks carry no
+// outer margin. Measured in headless Chrome against this same stylesheet: 33px of
+// overflow before, 0 after, with the page still filling the column.
+check('the page contains its blocks margins, so a short file cannot scroll',
+  /\.dsh-notebook-pm\{[^}]*display:flow-root/.test(css)
+  && /\.dsh-notebook-pm > :first-child\{margin-top:0\}/.test(css)
+  && /\.dsh-notebook-pm > :last-child\{margin-bottom:0\}/.test(css), '')
+check('the page still fills the column, and only the page scrolls',
+  // The fix must not have come from a shorter page: with no `min-height:100%` the
+  // page would end at the last line, and a click below it would miss the editor.
+  /\.dsh-notebook-pm\{[^}]*min-height:100%/.test(css)
+  && /\.dsh-notebook-pmHost\{[^}]*overflow:auto/.test(css)
+  && /\.dsh-notebook-pmHost\{[^}]*min-height:0/.test(css), '')
 check('the directory column does not scroll, so its heading stays put',
   // Same shape as the editor: a fixed head over its own scrolling list. Both columns'
   // headings must stay where the shared 44px line is drawn.
