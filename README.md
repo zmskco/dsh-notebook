@@ -47,4 +47,4 @@ npm pack --dry-run     # 看 tarball 内容
 
 ## 许可
 
-MIT。面板内的工具栏线性图标来自 [Lucide](https://lucide.dev)（ISC）；目录树的类型图标来自 [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme)（MIT，Copyright (c) 2025 Material Extensions，全文在 `assets/material-icons/LICENSE.txt`）；插件图标 `icon.png` 由本仓库的 `icon.ico` 转出（同一版美术资源）。
+MIT。面板内的工具栏线性图标来自 [Lucide](https://lucide.dev)（ISC）；目录树的类型图标来自 [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme)（MIT，Copyright (c) 2025 Material Extensions，全文在 `assets/material-icons/LICENSE.txt`）；
