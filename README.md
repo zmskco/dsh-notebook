@@ -37,7 +37,7 @@ https://github.com/zmskco/dsh-notebook
 ## 开发
 
 ```
-pnpm install
+pnpm install           # prepare 顺带跑一次 build
 pnpm run build         # host(tsc) + client(tsdown) + 产物契约检查
 pnpm test              # 类型检查 + 沙箱 + Host 冒烟
 pnpm run vendor:icons  # 升级 Material Icon Theme 后重新收录图标（--dry-run 只校验）
