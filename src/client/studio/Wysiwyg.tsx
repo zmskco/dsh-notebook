@@ -13,7 +13,7 @@
  */
 import * as React from 'react'
 import { EditorState } from 'prosemirror-state'
-import type { Command, Transaction } from 'prosemirror-state'
+import type { Command, Plugin, Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import { history, redo, undo } from 'prosemirror-history'
 import { keymap } from 'prosemirror-keymap'
@@ -21,6 +21,7 @@ import { baseKeymap, chainCommands } from 'prosemirror-commands'
 import { inputRules, textblockTypeInputRule, wrappingInputRule } from 'prosemirror-inputrules'
 import type { InputRule } from 'prosemirror-inputrules'
 import { liftListItem, splitListItem } from 'prosemirror-schema-list'
+import { codeHighlightPlugin } from '../state/pm-highlight'
 import { documentFromMarkdown, documentNodes, markdownFromDocument } from '../state/pm-document'
 
 export interface WysiwygProps {
@@ -74,6 +75,28 @@ export function editorKeyBindings(): Record<string, Command> {
   }
 }
 
+/**
+ * The plugins an editor is built with.
+ *
+ * A function rather than a constant at module scope, because ProseMirror plugin
+ * instances carry per-editor state: two editors sharing one instance would share
+ * one history, and the second file would inherit the first's undo stack. Colour
+ * is the last of them and the only one that is purely a view concern.
+ *
+ * Exported so the artifact check can look inside the list — "the page colours
+ * fenced code" is otherwise only visible in a browser.
+ * @returns a fresh plugin list for one editor.
+ */
+export function editorPlugins(): Plugin[] {
+  return [
+    inputRules({ rules: markdownRules() }),
+    keymap(editorKeyBindings()),
+    keymap(baseKeymap),
+    history(),
+    codeHighlightPlugin(),
+  ]
+}
+
 export function Wysiwyg({ text, onChange }: WysiwygProps): React.ReactElement {
   const host = React.useRef<HTMLDivElement | null>(null)
   // Read through a ref so the editor never holds a stale save handler.
@@ -93,12 +116,7 @@ export function Wysiwyg({ text, onChange }: WysiwygProps): React.ReactElement {
     view = new EditorView(element, {
       state: EditorState.create({
         doc: documentFromMarkdown(text),
-        plugins: [
-          inputRules({ rules: markdownRules() }),
-          keymap(editorKeyBindings()),
-          keymap(baseKeymap),
-          history(),
-        ],
+        plugins: editorPlugins(),
       }),
       dispatchTransaction: (transaction: Transaction) => {
         if (view === undefined) return

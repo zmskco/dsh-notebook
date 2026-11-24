@@ -289,7 +289,7 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
    without a single component knowing about it. */
 .dsh-notebook-root[data-paper="plain"]{--dsh-notebook-paper-bg:#ffffff;--dsh-notebook-paper-ink:#1b1b1b;--dsh-notebook-paper-soft:#6d6d6d;--dsh-notebook-paper-line:#e6e6e6;--dsh-notebook-paper-layer:#f4f4f4;--dsh-notebook-paper-code:#f5f5f5;--dsh-notebook-paper-brand:#1f1f1f;--dsh-notebook-paper-on:#ffffff;--dsh-notebook-paper-warn:#96560a}
 .dsh-notebook-root[data-paper="elegant"]{--dsh-notebook-paper-bg:#faf7f0;--dsh-notebook-paper-ink:#2a2620;--dsh-notebook-paper-soft:#6f675c;--dsh-notebook-paper-line:#e7dfd0;--dsh-notebook-paper-layer:#f3eee3;--dsh-notebook-paper-code:#f2ecdd;--dsh-notebook-paper-brand:#40372a;--dsh-notebook-paper-on:#fdfbf6;--dsh-notebook-paper-warn:#8d5310}
-.dsh-notebook-root[data-paper="night"]{--dsh-notebook-paper-bg:#14161a;--dsh-notebook-paper-ink:#e8e6e1;--dsh-notebook-paper-soft:#a09d96;--dsh-notebook-paper-line:#2a2d33;--dsh-notebook-paper-layer:#1d2026;--dsh-notebook-paper-code:#1b1e24;--dsh-notebook-paper-brand:#cfcbc2;--dsh-notebook-paper-on:#14161a;--dsh-notebook-paper-warn:#f0b44a}
+.dsh-notebook-root[data-paper="night"]{--dsh-notebook-paper-bg:#14161a;--dsh-notebook-paper-ink:#e8e6e1;--dsh-notebook-paper-soft:#a09d96;--dsh-notebook-paper-line:#2a2d33;--dsh-notebook-paper-layer:#1d2026;--dsh-notebook-paper-code:#1b1e24;--dsh-notebook-paper-brand:#cfcbc2;--dsh-notebook-paper-on:#14161a;--dsh-notebook-paper-warn:#f0b44a;--dsh-notebook-hl-comment:#8d939d;--dsh-notebook-hl-keyword:#c678dd;--dsh-notebook-hl-builtin:#e5c07b;--dsh-notebook-hl-literal:#d19a66;--dsh-notebook-hl-number:#e0a066;--dsh-notebook-hl-string:#98c379;--dsh-notebook-hl-regexp:#7ec699;--dsh-notebook-hl-symbol:#56b6c2;--dsh-notebook-hl-title:#61afef;--dsh-notebook-hl-attr:#e0a86a;--dsh-notebook-hl-variable:#e06c75;--dsh-notebook-hl-meta:#c9a26a;--dsh-notebook-hl-operator:#b3bac5;--dsh-notebook-hl-addition:#7fce8f;--dsh-notebook-hl-deletion:#f07b7b;--dsh-notebook-hl-link:#7cc0f5}
 .dsh-notebook-root[data-paper="green"]{--dsh-notebook-paper-bg:#e7f0e2;--dsh-notebook-paper-ink:#1f2a1c;--dsh-notebook-paper-soft:#5f6d59;--dsh-notebook-paper-line:#cfdcc6;--dsh-notebook-paper-layer:#dcebd5;--dsh-notebook-paper-code:#d9e7d0;--dsh-notebook-paper-brand:#2f4326;--dsh-notebook-paper-on:#f3f8ef;--dsh-notebook-paper-warn:#8a5a00}
 /* Carrying the paper to everything inside: the shell's surface tokens are
    re-pointed at the paper's shades, so the columns, the tree, the buttons and the
@@ -303,7 +303,11 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
    text) where the writing surface should be one. The tab band above it is the only
    boundary the page needs, and the drawn tab opens straight into it. */
 .dsh-notebook-doc{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;border:0;border-radius:0;background:transparent;color:inherit;font-family:var(--dsh-notebook-font,system-ui);font-size:var(--dsh-notebook-size,15px)}
-.dsh-notebook-doc .dsh-notebook-textarea{flex:1;min-height:0;background:transparent;border:0;border-radius:0;color:inherit;font-family:inherit;font-size:inherit;line-height:1.9;padding:14px 22px 40px;resize:none}
+/* The source view's text metrics, in one place: the textarea a file is typed into
+   and the colour layer drawn behind it are two boxes that must agree on every
+   number here, or the colour slides off the characters. Both selectors are in this
+   one rule so that can only be edited for the pair, never for one of them. */
+.dsh-notebook-doc .dsh-notebook-textarea,.dsh-notebook-srcText{background:transparent;border:0;border-radius:0;color:inherit;font-family:inherit;font-size:inherit;line-height:1.9;padding:14px 22px 40px;resize:none}
 .dsh-notebook-doc .dsh-notebook-textarea:focus{border-color:transparent}
 /* The writing surface's scroll container. ProseMirror owns the editable element
    inside it; this box is the only thing in the column that scrolls, and its padding
@@ -372,6 +376,97 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 /* A block the schema does not model — front matter, a table — kept as the markdown
    it was written as, and visibly not part of the prose being edited. */
 .dsh-notebook-pmRaw{border-style:dashed;color:var(--dsw-alias-label-secondary);font-size:.78em;line-height:1.6}
+/* ---- syntax colour -------------------------------------------------------------
+   Two surfaces show code: a fenced block on the rendered page (coloured by view
+   decorations — see src/client/state/pm-highlight.ts) and the layer behind the
+   source editor's textarea (src/client/studio/SourceEditor.tsx). Both are
+   coloured from one vocabulary, so they name the same sixteen classes below.
+   The palette follows the *paper*, not the interface theme: the paper is the
+   surface being read, and a near-black ink on 黑夜 would vanish. 黑夜's palette is
+   declared with its own paper above; the three light papers share the one below.
+   Every value is chosen so that the *worst* background it is ever drawn on passes
+   WCAG AA (4.5:1) at the code size on the page (0.85em): for the light set that
+   is 绿荫's fence #d9e7d0, and the tightest token lands at 4.73:1 there and
+   >= 5.1:1 on the other eleven background/token pairs. No two tokens share a
+   value, so every distinction the vocabulary claims is one a reader can see. */
+.dsh-notebook-root[data-paper="plain"],.dsh-notebook-root[data-paper="elegant"],.dsh-notebook-root[data-paper="green"]{--dsh-notebook-hl-comment:#575e6a;--dsh-notebook-hl-keyword:#8530a8;--dsh-notebook-hl-builtin:#8a5300;--dsh-notebook-hl-literal:#7a4a12;--dsh-notebook-hl-number:#8f4b00;--dsh-notebook-hl-string:#2f6f34;--dsh-notebook-hl-regexp:#2f6b52;--dsh-notebook-hl-symbol:#7a3d9c;--dsh-notebook-hl-title:#1b5fa8;--dsh-notebook-hl-attr:#9a4a00;--dsh-notebook-hl-variable:#ab2f22;--dsh-notebook-hl-meta:#6a4a90;--dsh-notebook-hl-operator:#4a5260;--dsh-notebook-hl-addition:#1f6b2e;--dsh-notebook-hl-deletion:#a32020;--dsh-notebook-hl-link:#0f5c94}
+.dsh-notebook-hl-comment{color:var(--dsh-notebook-hl-comment)}
+.dsh-notebook-hl-keyword{color:var(--dsh-notebook-hl-keyword)}
+.dsh-notebook-hl-builtin{color:var(--dsh-notebook-hl-builtin)}
+.dsh-notebook-hl-literal{color:var(--dsh-notebook-hl-literal)}
+.dsh-notebook-hl-number{color:var(--dsh-notebook-hl-number)}
+.dsh-notebook-hl-string{color:var(--dsh-notebook-hl-string)}
+.dsh-notebook-hl-regexp{color:var(--dsh-notebook-hl-regexp)}
+.dsh-notebook-hl-symbol{color:var(--dsh-notebook-hl-symbol)}
+.dsh-notebook-hl-title{color:var(--dsh-notebook-hl-title)}
+.dsh-notebook-hl-attr{color:var(--dsh-notebook-hl-attr)}
+.dsh-notebook-hl-variable{color:var(--dsh-notebook-hl-variable)}
+.dsh-notebook-hl-meta{color:var(--dsh-notebook-hl-meta)}
+.dsh-notebook-hl-operator{color:var(--dsh-notebook-hl-operator)}
+.dsh-notebook-hl-addition{color:var(--dsh-notebook-hl-addition)}
+.dsh-notebook-hl-deletion{color:var(--dsh-notebook-hl-deletion)}
+.dsh-notebook-hl-link{color:var(--dsh-notebook-hl-link);text-decoration:underline}
+/* Emphasis and strength are drawn by shape, not by colour: they are the two
+   scopes whose whole meaning *is* the shape, and a third colour would say less.
+   Scoped to the rendered page on purpose — in the source editor the colour layer
+   must keep every text metric the textarea has (see the layer rules below), and a
+   real bold face would change the advances under a normal-weight caret. */
+.dsh-notebook-pm .dsh-notebook-hl-emphasis{font-style:italic}
+.dsh-notebook-pm .dsh-notebook-hl-strong{font-weight:600}
+/* The language of a fenced block, as a quiet label in the block's own top edge.
+   A fence that names a language has a top strip wide enough for it, so the label
+   never sits over the first line of code; a fence with no info string has no strip
+   and no label.
+   The label is drawn, not hovered, because the language is a fact about the block
+   rather than a tooltip, and because a mouse-only disclosure is not a disclosure.
+   An info string this panel has no grammar for keeps the strip and dims: the label
+   is still the author's word, and the code below it is plainly uncoloured. */
+.dsh-notebook-pm pre[data-language]:not([data-language=""]){position:relative;padding-top:1.9em}
+.dsh-notebook-pm pre[data-language]:not([data-language=""])::after{content:attr(data-language);position:absolute;top:.35em;right:.6em;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 5px;border-radius:4px;background:var(--dsh-notebook-paper-bg,var(--dsw-alias-bg-base));box-shadow:0 0 0 1px var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:.72em;line-height:1.6;pointer-events:none;user-select:none}
+.dsh-notebook-pm pre[data-language-known="false"]::after{opacity:.55;box-shadow:none}
+/* The source editor's two layers. Both live in one box and share every text metric
+   — font, size, line height, padding, wrapping, tab size — so the colour lands
+   under the characters the textarea is drawing. The textarea is the one on top,
+   with transparent glyphs and a live caret; the layer behind it has no scrollbar,
+   and SourceEditor copies the textarea's scroll and width onto it.
+   Neither axis is given twice: an inset of all four sides *and* a width would be
+   over-constrained, and in a right-to-left context the browser drops the left edge
+   — which would anchor the layer to the wrong side and offset every glyph by the
+   gutter. */
+.dsh-notebook-src{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.dsh-notebook-srcText{position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;margin:0;letter-spacing:normal;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;text-align:left}
+/* hidden, not clip: the layer follows the textarea by having its scrollTop set,
+   and a box clipped with clip is not a scroll container at all — the assignment
+   would be ignored and a long file's colour would stay at the top while the text
+   scrolled. Hidden keeps it scrollable by script and invisible to the user, which
+   is exactly what a follower needs. */
+.dsh-notebook-srcCode{width:100%;overflow:hidden;color:inherit;pointer-events:none}
+/* The layer's code element is the browser's own monospace by default, which would draw
+   the colour in a different face from the textarea above it and put every glyph a little
+   to the left of the character it belongs to. It inherits every text metric instead. */
+.dsh-notebook-srcCode code{font:inherit;letter-spacing:inherit;white-space:inherit;overflow-wrap:inherit;word-break:inherit;tab-size:inherit;background:transparent;padding:0;border:0}
+/* The textarea keeps the old element's own styling (the dsh-notebook-textarea rules
+   above), except for the glyphs, which are the layer's to draw. */
+.dsh-notebook-srcInput{flex:1;min-height:0;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--dsw-alias-label-primary);resize:none;scrollbar-gutter:stable}
+/* The one thing the source view has to say out loud: why a file is not coloured.
+   A file whose type this panel has no grammar for, or one too large to colour in
+   the time a keystroke allows, is drawn as plain text — correct, and indistinguishable
+   from a broken feature unless it says so. The label rides in the page's top padding,
+   above the first line, and is drawn only on the uncoloured path. */
+.dsh-notebook-srcLabel{position:absolute;top:2px;right:6px;z-index:1;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 5px;border-radius:4px;box-shadow:0 0 0 1px var(--dsw-alias-border-l1);background:var(--dsh-notebook-paper-bg,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-secondary);font-size:10px;line-height:14px;pointer-events:none;user-select:none}
+.dsh-notebook-srcInput::placeholder{color:var(--dsw-alias-label-secondary);-webkit-text-fill-color:var(--dsw-alias-label-secondary)}
+/* Selecting text: the textarea paints its selection *above* the colour layer, so an opaque
+   selection would hide the glyphs it selected. A translucent one lets the colour show
+   through, and the selection is still the plain fact it was. The first declaration is the
+   fallback for a browser without color-mix; both are translucent.
+   Note: this stylesheet is a template literal, so no backtick may appear in a comment. */
+.dsh-notebook-srcInput::selection{background:rgba(64,120,242,.3);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 30%,transparent)}
+.dsh-notebook-srcInput::-moz-selection{background:rgba(64,120,242,.3);background:color-mix(in srgb,var(--dsw-alias-brand-primary) 30%,transparent)}
+/* While an input method is composing, the browser draws the pre-edit text in the
+   textarea's own colour, which is transparent — so the colour comes back to the
+   textarea and the layer steps aside until the word is committed. */
+.dsh-notebook-src[data-composing="true"] .dsh-notebook-srcCode{visibility:hidden}
+.dsh-notebook-src[data-composing="true"] .dsh-notebook-srcInput{color:var(--dsw-alias-label-primary);-webkit-text-fill-color:currentColor}
 `
 
 

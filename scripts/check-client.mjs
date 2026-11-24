@@ -41,7 +41,17 @@ function check(label, condition, detail) {
 function createElement(type, props, ...children) {
   return { type, props: { ...props, children: children.length > 1 ? children : children[0] } }
 }
-const React = { createElement, useCallback: fn => fn, useEffect: fn => { fn() }, useMemo: fn => fn(), useRef: v => ({ current: v }), useState: v => [v, () => {}] }
+const React = {
+  createElement,
+  useCallback: fn => fn,
+  useEffect: fn => { fn() },
+  // The source editor measures its colour layer in a layout effect, which runs
+  // framed the same way here: there is no browser, and the refs are empty.
+  useLayoutEffect: fn => { fn() },
+  useMemo: fn => fn(),
+  useRef: v => ({ current: v }),
+  useState: v => [v, () => {}],
+}
 
 const registrations = []
 let registeredId
@@ -353,6 +363,207 @@ check('the rendered document keeps front matter verbatim',
 check('the panel never turns a destination into a link',
   !markdownFromDocument(documentFromMarkdown('[x](javascript:alert(1))\n')).includes('<a'),
   '')
+
+// --- syntax colour --------------------------------------------------------------------
+// The colouring is the feature and it is pure, so it is driven as data: coverage of the
+// input, the vocabulary, the alias rule, and the file-name rule. A colour at the wrong
+// offset would be read as fact, so coverage is checked character by character.
+const {
+  HIGHLIGHT_CLASSES,
+  HIGHLIGHTED_LANGUAGES,
+  codeColourRanges,
+  codeHighlightPlugin,
+  editorPlugins,
+  highlightCode,
+  highlightLanguages,
+  languageForPath,
+  normalizeLanguage,
+} = exports
+const tsSnippet = 'const answer: number = 42\n// 注释\nfunction greet(name: string): string {\n  return `hi ${name}`\n}\n'
+const spans = highlightCode(tsSnippet, 'typescript')
+check('the colouring reproduces its input exactly',
+  spans.map(span => span.text).join('') === tsSnippet, JSON.stringify(spans.map(span => span.className)))
+check('a coloured run carries a class from the vocabulary',
+  spans.some(span => span.className.length > 0)
+  && spans.every(span => span.className === '' || HIGHLIGHT_CLASSES.includes(span.className)),
+  JSON.stringify([...new Set(spans.map(span => span.className))]))
+check('the classes are the ones the stylesheet names',
+  HIGHLIGHT_CLASSES.length >= 12 && HIGHLIGHT_CLASSES.every(name => name.startsWith('dsh-notebook-hl-')),
+  `${HIGHLIGHT_CLASSES.length} classes`)
+check('keywords, strings and comments are told apart',
+  // The three distinctions a reader actually uses when skimming code.
+  ['keyword', 'string', 'comment'].every((token) => {
+    const expected = `dsh-notebook-hl-${token}`
+    return spans.some(span => span.className === expected && span.text.length > 0)
+  }), JSON.stringify([...new Set(spans.map(span => span.className))]))
+check('a language the panel does not carry is drawn plainly, not guessed',
+  normalizeLanguage('cobol') === undefined && normalizeLanguage('zzz') === undefined
+  && highlightCode(tsSnippet, 'cobol').length === 1
+  && highlightCode(tsSnippet, 'cobol')[0].className === '',
+  JSON.stringify(highlightCode(tsSnippet, 'cobol')))
+check('a fence with no language is plain text',
+  highlightCode('x = 1\n', '').length === 1 && highlightCode('x = 1\n', undefined).length === 1, '')
+check('an empty block is no spans, not one empty one',
+  highlightCode('', 'typescript').length === 0, JSON.stringify(highlightCode('', 'typescript')))
+check('the names a fence uses reach the grammar behind them',
+  normalizeLanguage('ts') === 'typescript' && normalizeLanguage('TSX') === 'typescript'
+  && normalizeLanguage('js') === 'javascript' && normalizeLanguage('py') === 'python'
+  && normalizeLanguage('yml') === 'yaml' && normalizeLanguage('sh') === 'bash'
+  && normalizeLanguage('c') === 'cpp' && normalizeLanguage('yml') === 'yaml',
+  [normalizeLanguage('ts'), normalizeLanguage('py'), normalizeLanguage('c')].join('/'))
+check('an info string may carry more than its language name',
+  normalizeLanguage('ts title="a.ts"') === 'typescript' && normalizeLanguage('  .py  ') === 'python',
+  `${normalizeLanguage('ts title="a.ts"')}/${normalizeLanguage('  .py  ')}`)
+check('every alias names a grammar that is registered',
+  HIGHLIGHTED_LANGUAGES.length > 0
+  && HIGHLIGHTED_LANGUAGES.every(id => normalizeLanguage(id) === id),
+  HIGHLIGHTED_LANGUAGES.filter(id => normalizeLanguage(id) !== id).join(','))
+check('the grammar table and the instance agree',
+  // A table naming a grammar that was never registered colours nothing, silently.
+  highlightLanguages().join(',') === HIGHLIGHTED_LANGUAGES.join(','),
+  `instance=${highlightLanguages().join(',')} table=${HIGHLIGHTED_LANGUAGES.join(',')}`)
+check('a file is coloured by its own name',
+  languageForPath('src/app.tsx') === 'typescript' && languageForPath('脚本.py') === 'python'
+  && languageForPath('data.yml') === 'yaml' && languageForPath('README.md') === 'markdown'
+  && languageForPath('第一章') === 'markdown',
+  [languageForPath('src/app.tsx'), languageForPath('第一章')].join('/'))
+check('a build file is coloured by its name, not by prose',
+  languageForPath('Dockerfile') === 'dockerfile' && languageForPath('Makefile') === 'makefile'
+  && languageForPath('.env') === 'ini' && languageForPath('.npmrc') === 'ini',
+  [languageForPath('Dockerfile'), languageForPath('.env')].join('/'))
+check('a file whose type is unknown opens uncoloured',
+  languageForPath('notes.zzz') === undefined && languageForPath('') === undefined
+  && languageForPath('.gitignore') === undefined,
+  [languageForPath('notes.zzz'), languageForPath('.gitignore')].join('/'))
+check('a markdown file is coloured as markdown, the mode it opens in',
+  // The page and the editor must agree: a `.md` opens rendered *and* is source-coloured
+  // when the author flips it, and the two use the same predicate.
+  isMarkdownPath('笔记.md') === (languageForPath('笔记.md') === 'markdown'), '')
+
+// The offsets are what a decoration takes, so they are read back out of a real document
+// produced by the ordinary reader: the text a range claims must be the text it colours.
+const colouredDoc = documentFromMarkdown('前言\n\n```ts\nconst x: number = 1\n```\n\n后记\n')
+const ranges = codeColourRanges(colouredDoc)
+check('a fenced block is coloured, and its prose is not',
+  ranges.length > 0
+  && ranges.every(range => range.from > 0 && range.to > range.from)
+  // Nothing outside the code block: the first paragraph ends before it.
+  && ranges.every(range => colouredDoc.textBetween(range.from, range.to, '') !== '前言'),
+  `${ranges.length} ranges`)
+check('every range lands on the text it claims to colour',
+  ranges.every((range) => {
+    const text = colouredDoc.textBetween(range.from, range.to, '')
+    return text.length > 0 && text.length === range.to - range.from
+  }), JSON.stringify(ranges.slice(0, 3)))
+check('the ranges put the keyword on the keyword',
+  ranges.some(range => range.className === 'dsh-notebook-hl-keyword'
+    && colouredDoc.textBetween(range.from, range.to, '') === 'const'), JSON.stringify(ranges))
+check('a block with no language is left uncoloured',
+  codeColourRanges(documentFromMarkdown('```\nplain text\n```\n')).length === 0, '')
+check('colouring adds nothing to the file',
+  // The decorations are view state: the same markdown comes back out, fence included.
+  markdownFromDocument(colouredDoc) === '前言\n\n```ts\nconst x: number = 1\n```\n\n后记\n',
+  JSON.stringify(markdownFromDocument(colouredDoc)))
+check('the rendered editor installs the colour plugin',
+  editorPlugins().some(plugin => plugin === codeHighlightPlugin() || plugin.key === codeHighlightPlugin().key),
+  '')
+// The plugin's own state: the set has to be buildable for a real document (a range
+// outside it throws in ProseMirror) and a selection change must not rebuild it.
+const colourPlug = codeHighlightPlugin()
+const colourState = colourPlug.spec.state
+check('the decoration set is built for a real document',
+  (() => {
+    const set = colourState.init({}, { doc: colouredDoc })
+    const found = set.find()
+    return found.length === ranges.length
+      && found.every(decoration => typeof decoration.from === 'number' && decoration.to > decoration.from)
+  })(), '')
+check('moving the caret does not recolour the document',
+  // The document object is the cache key, so an untouched document is the same set.
+  (() => {
+    const set = colourState.init({}, { doc: colouredDoc })
+    return colourState.apply({ docChanged: false }, set) === set
+  })(), '')
+// The label the stylesheet draws comes from the DOM the schema writes, so the two
+// halves — "what is this block written in" and "can we colour it" — are asserted on
+// that DOM rather than on the CSS alone.
+const fencedDom = (markdown) => {
+  const block = documentFromMarkdown(markdown).firstChild
+  return block.type.spec.toDOM(block)
+}
+check('a fence carries its language, and whether the panel can colour it',
+  fencedDom('```ts\nconst x = 1\n```\n')[1]['data-language'] === 'ts'
+  && fencedDom('```ts\nconst x = 1\n```\n')[1]['data-language-known'] === 'true'
+  // A word the panel carries but cannot colour: the label stays, dimmed.
+  && fencedDom('```zig\nx\n```\n')[1]['data-language-known'] === 'false',
+  JSON.stringify(fencedDom('```zig\nx\n```\n')?.[1]))
+check('a fence with no info string gets no strip and no label',
+  fencedDom('```\nx\n```\n')[1]['data-language'] === '', '')
+
+// The source editor is a textarea with a colour layer behind it, and the two must be the
+// same text: one is what the author sees, the other is what gets saved.
+const sourceLabels = { plainLabel: 'plainText', uncolouredLabel: 'uncoloured' }
+const sourceEditor = exports.SourceEditor({
+  path: 'src/app.ts', value: 'const x = 1\n', onChange: () => {}, ...sourceLabels,
+})
+const [sourceLayer, sourceInput] = (() => {
+  const children = [sourceEditor.props?.children].flat().filter(child => child !== null)
+  return [children.find(child => String(child?.props?.className ?? '').includes('dsh-notebook-srcCode')), children.find(child => child?.type === 'textarea')]
+})()
+check('a source file is drawn as a colour layer under its textarea',
+  String(sourceEditor.props?.className ?? '').includes('dsh-notebook-src')
+  && sourceEditor.props?.['data-mode'] === 'source'
+  && sourceEditor.props?.['data-language'] === 'typescript'
+  && sourceEditor.props?.['data-coloured'] === 'true'
+  && String(sourceLayer?.props?.className ?? '').includes('dsh-notebook-srcCode')
+  && sourceLayer?.props?.['aria-hidden'] === 'true'
+  && sourceInput?.type === 'textarea'
+  && String(sourceInput?.props?.className ?? '').includes('dsh-notebook-srcInput'),
+  JSON.stringify([sourceEditor.props?.['data-language'], sourceInput?.type]))
+check('the layer draws the same characters the textarea holds',
+  // The file's own text, plus one newline: a single trailing break is not rendered in a
+  // `pre`, and the textarea does show that empty last line.
+  (() => {
+    /** Every string in an element subtree, in order. */
+    const textOf = node => (typeof node === 'string' ? node
+      : Array.isArray(node) ? node.map(textOf).join('')
+      : node === null || node === undefined || typeof node !== 'object' ? ''
+      : textOf(node.props?.children))
+    return textOf(sourceLayer?.props?.children) === 'const x = 1\n\n'
+  })(), JSON.stringify(sourceLayer?.props?.children))
+check('the layer is brought back in step on scroll, edit and resize',
+  // Three ways the two layers can part: the textarea scrolls, the draft changes, or the
+  // column is dragged narrower. Each one is a real event, not a repaint.
+  typeof sourceInput?.props?.onScroll === 'function'
+  && typeof sourceInput?.props?.onCompositionStart === 'function'
+  && typeof sourceInput?.props?.onCompositionEnd === 'function'
+  && source.includes('new ResizeObserver'), '')
+check('a code file keeps the spell checker off, a chapter keeps it on',
+  // The same component serves `.ts` and the markdown source of a chapter.
+  sourceInput?.props?.spellCheck === false
+  && exports.SourceEditor({
+    path: '笔记.md', value: '正文\n', onChange: () => {}, ...sourceLabels,
+  }).props?.children?.find?.(child => child?.type === 'textarea')?.props?.spellCheck === true,
+  '')
+check('a file with no grammar is the plain textarea it was before',
+  (() => {
+    const plain = exports.SourceEditor({ path: 'notes.zzz', value: 'anything', onChange: () => {}, ...sourceLabels })
+    // The colours are absent, and the page says why rather than leaving it to be guessed:
+    // the wrapper carries its own label, and the editor inside is the shared TextArea.
+    const label = [plain.props?.children].flat().find(child => String(child?.props?.className ?? '').includes('dsh-notebook-srcLabel'))
+    const rendered = [plain.props?.children].flat()
+      .filter(child => typeof child?.type === 'function')
+      .map(child => child.type(child.props))[0]
+    return plain.props?.['data-language'] === '' && plain.props?.['data-coloured'] === 'false'
+      && label?.props?.children === 'plainText'
+      && rendered?.type === 'textarea' && rendered.props.value === 'anything'
+      && String(rendered.props.className).includes('dsh-notebook-textarea')
+  })(), '')
+check('a line break from the Host is drawn as the textarea draws it',
+  // A textarea's value setter turns CRLF into LF while the buffer keeps what the Host
+  // returned, so the layer is built from the normalised text and the buffer is not.
+  exports.layerText('a\r\nb\r\n') === 'a\nb\n\n' && exports.layerText('a\nb') === 'a\nb',
+  JSON.stringify(exports.layerText('a\r\nb\r\n')))
 
 // --- the directory column's heading -----------------------------------------------
 const { AUTOSAVE_MS, NotebookTab } = exports
@@ -1031,6 +1242,144 @@ check('no stylesheet rule is declared twice',
 check('an open-but-not-drawn tree row is marked differently from the drawn one',
   /\.dsh-notebook-item\[data-open="true"\]:not\(\[data-active="true"\]\)/.test(css), '')
 
+// The colour vocabulary and the stylesheet have to be one list: a class the colouring
+// emits with no rule is text drawn in the wrong colour, silently.
+check('every colour the highlighting emits has a rule',
+  HIGHLIGHT_CLASSES.every(name => css.includes(`.${name}`)),
+  HIGHLIGHT_CLASSES.filter(name => !css.includes(`.${name}`)).join(','))
+check('the palette follows the paper, not the interface theme',
+  // Four papers, two syntax palettes: a dark ink on 黑夜 would vanish, and the paper is
+  // the surface being read.
+  ['plain', 'elegant', 'green'].every(id => css.includes(`[data-paper="${id}"]`))
+  && /\[data-paper="night"\]\{[^}]*--dsh-notebook-hl-keyword/.test(css)
+  && /\[data-paper="plain"\],[^{]*\{[^}]*--dsh-notebook-hl-keyword/.test(css), '')
+// Every colour the highlighting can draw has to be readable on every surface it can
+// land on, at the size code is drawn at. The worst surface is 绿荫's fence — the
+// darkest of the twelve — so checking against each paper's own two backgrounds covers
+// all of them. Ratio is WCAG 2.1: (lighter + 0.05) / (darker + 0.05).
+const relativeLuminance = (hex) => {
+  const channel = (value) => {
+    const s = value / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  const n = Number.parseInt(hex.slice(1), 16)
+  return 0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255)
+}
+const contrastRatio = (a, b) => {
+  const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort((left, right) => right - left)
+  return (light + 0.05) / (dark + 0.05)
+}
+/** The syntax-colour custom properties one `data-paper` rule declares. */
+const paperVars = (paper) => {
+  const rule = new RegExp(`\\[data-paper="${paper}"\\]\\{([^}]*)\\}`).exec(css)?.[1] ?? ''
+  return new Map([...rule.matchAll(/(--dsh-notebook-hl-[\w-]+)\s*:\s*(#[0-9a-fA-F]{6})/g)].map(match => [match[1], match[2]]))
+}
+/** The whole paper rule, for the surfaces those colours are drawn on. */
+const paperSurface = (paper) => {
+  const rule = new RegExp(`\\[data-paper="${paper}"\\]\\{([^}]*)\\}`).exec(css)?.[1] ?? ''
+  const read = name => new RegExp(`${name}\\s*:\\s*(#[0-9a-fA-F]{6})`).exec(rule)?.[1]
+  return { paper: read('--dsh-notebook-paper-bg'), fence: read('--dsh-notebook-paper-code') }
+}
+check('every syntax colour is readable on every paper it is drawn on',
+  (() => {
+    // The light trio shares one palette, declared on a rule listing all three names.
+    const shared = /\[data-paper="plain"\],[^{]*\{([^}]*)\}/.exec(css)?.[1] ?? ''
+    const sharedVars = new Map([...shared.matchAll(/(--dsh-notebook-hl-[\w-]+)\s*:\s*(#[0-9a-fA-F]{6})/g)].map(m => [m[1], m[2]]))
+    const plain = paperSurface('plain')
+    const elegant = paperSurface('elegant')
+    const green = paperSurface('green')
+    const night = paperSurface('night')
+    const surfaces = [
+      // [palette, the paper's background, the paper's fence background]
+      [sharedVars, plain.paper, plain.fence],
+      [sharedVars, elegant.paper, elegant.fence],
+      [sharedVars, green.paper, green.fence],
+      [paperVars('night'), night.paper, night.fence],
+    ]
+    const failures = []
+    for (const [palette, paper, fence] of surfaces) {
+      if (palette.size === 0 || paper === undefined || fence === undefined) {
+        failures.push('a palette or a surface is missing')
+        continue
+      }
+      for (const [name, value] of palette) {
+        for (const background of [paper, fence]) {
+          const ratio = contrastRatio(value, background)
+          // 4.5:1 is the WCAG AA threshold for the size code is drawn at.
+          if (ratio < 4.5) failures.push(`${name} ${value} on ${background} = ${ratio.toFixed(2)}`)
+        }
+      }
+    }
+    if (failures.length > 0) console.log(`  ${failures.join('\n  ')}`)
+    return failures.length === 0
+  })(), 'a colour fails WCAG AA on a surface it is drawn on')
+check('the light palette is the same values for all three light papers',
+  // It is declared once, on a selector listing the three: one edit cannot leave 绿荫
+  // behind, which is the paper whose background is darkest and first to fail contrast.
+  (() => {
+    const rule = /(\[data-paper="plain"\],[^{]*)\{([^}]*--dsh-notebook-hl-[^}]*)\}/.exec(css)
+    const selectors = rule?.[1] ?? ''
+    return ['plain', 'elegant', 'green'].every(name => selectors.includes(`[data-paper="${name}"]`))
+      // Exactly one rule carries a light palette: a second one would override it.
+      && (css.match(/--dsh-notebook-hl-comment:/g) ?? []).length === 2
+  })(), 'a light paper declares colours of its own')
+check('no two syntax colours are the same colour',
+  // A palette that draws a keyword and a string in one value is claiming a distinction
+  // it does not make.
+  (() => {
+    const light = /\[data-paper="plain"\],[^{]*\{([^}]*)\}/.exec(css)?.[1] ?? ''
+    const night = paperVars('night')
+    for (const rule of [light, [...night].map(([k, v]) => `${k}:${v}`).join(';')]) {
+      const values = [...rule.matchAll(/--dsh-notebook-hl-[\w-]+\s*:\s*(#[0-9a-fA-F]{6})/g)].map(match => match[1].toLowerCase())
+      if (new Set(values).size !== values.length) return false
+    }
+    return true
+  })(), 'two tokens share a value')
+check('a code block names its language, in the block\'s own top edge',
+  // A label, not a tooltip: it is drawn, it sits in padding reserved for it so it never
+  // covers the first line, and an info string with no grammar dims instead of claiming
+  // a colour the block does not have.
+  /\.dsh-notebook-pm pre\[data-language\]:not\(\[data-language=""\]\)\{[^}]*padding-top:1\.9em/.test(css)
+  && /pre\[data-language\][^{]*::after\{[^}]*content:attr\(data-language\)/.test(css)
+  && /pre\[data-language\][^{]*::after\{[^}]*top:\.35em/.test(css)
+  && /pre\[data-language-known="false"\]::after\{[^}]*opacity/.test(css)
+  // No `:hover` gate: the language is a fact about the block, not an interaction.
+  && !/pre\[data-language\][^{]*:hover::after/.test(css), '')
+check('the layer follows the textarea by scrolling, and cannot scroll on its own',
+  // `scrollTop` is the only thing that keeps a long file's colour under its text, and a
+  // box clipped with `clip` would ignore the assignment.
+  /\.dsh-notebook-srcCode\{[^}]*overflow:hidden/.test(css)
+  && !/\.dsh-notebook-srcCode\{[^}]*overflow:clip/.test(css)
+  && typeof sourceInput?.props?.onScroll === 'function', '')
+check('the source view says why it is not coloured',
+  /\.dsh-notebook-srcLabel\{[^}]*position:absolute/.test(css)
+  && /\.dsh-notebook-srcLabel\{[^}]*top:2px/.test(css), '')
+check('the source editor draws its colour behind the text, in one box',
+  // Both layers share every metric that decides where a glyph lands; the textarea is the
+  // one on top with transparent glyphs and a live caret.
+  /\.dsh-notebook-src\{[^}]*position:relative/.test(css)
+  && /\.dsh-notebook-srcText\{[^}]*position:absolute/.test(css)
+  && /\.dsh-notebook-srcText\{[^}]*white-space:pre-wrap/.test(css)
+  && /\.dsh-notebook-srcText\{[^}]*tab-size:4/.test(css)
+  && /\.dsh-notebook-srcInput\{[^}]*color:transparent/.test(css)
+  && /\.dsh-notebook-srcInput\{[^}]*caret-color:var\(--dsw-alias-label-primary\)/.test(css)
+  && /\.dsh-notebook-srcCode\{[^}]*pointer-events:none/.test(css), '')
+check('an input method composing a word is drawn, not hidden',
+  // The pre-edit text is drawn by the textarea, whose glyphs are transparent: without
+  // this rule a composed character would be invisible until it was committed.
+  /\.dsh-notebook-src\[data-composing="true"\] \.dsh-notebook-srcCode\{[^}]*visibility:hidden/.test(css)
+  && /\.dsh-notebook-src\[data-composing="true"\] \.dsh-notebook-srcInput\{[^}]*text-fill-color:currentColor/.test(css), '')
+check('the layer\'s code inherits the editor\'s face, not the browser\'s monospace',
+  // A `code` element is monospace by default, which would put the colour in a different
+  // font from the textarea's glyphs and shift it off the characters it belongs to.
+  /\.dsh-notebook-srcCode code\{[^}]*font:inherit/.test(css)
+  && /\.dsh-notebook-srcCode code\{[^}]*tab-size:inherit/.test(css)
+  && /\.dsh-notebook-srcCode code\{[^}]*white-space:inherit/.test(css), '')
+check('a selection lets the colour show through instead of covering it',
+  // The textarea paints its selection above the layer, so an opaque one would hide the
+  // glyphs it just selected.
+  /\.dsh-notebook-srcInput::selection\{[^}]*transparent/.test(css), '')
+
 // --- one icon set --------------------------------------------------------------------
 // The gem's paths moved out of `glyphs.tsx` when the sidebar row started drawing the
 // artwork itself, so the "one stroke family" rule covers the in-panel glyphs only.
@@ -1173,6 +1522,18 @@ check('the tree rows draw the artwork, not a Lucide file or folder glyph',
 check('the vendored licence ships with the package',
   pkg.files.includes('assets/material-icons/LICENSE.txt') && pkg.files.includes('assets/material-icons/NOTICE.md'),
   JSON.stringify(pkg.files))
+check('the syntax colouring\'s licences ship too',
+  // highlight.js is BSD-3-Clause and lowlight MIT; both are bundled into the artifact, so
+  // the notice has to travel with the package.
+  ['assets/highlight/LICENSE.txt', 'assets/highlight/LICENSE-lowlight.txt', 'assets/highlight/NOTICE.md']
+    .every(file => pkg.files.includes(file)), JSON.stringify(pkg.files))
+check('the highlighter is a build-time dependency, not a runtime one',
+  // Everything but react is inlined into the bundle, so a `dependencies` entry would make
+  // DSH install a second copy that nothing loads.
+  pkg.dependencies === undefined
+  && typeof pkg.devDependencies['highlight.js'] === 'string'
+  && typeof pkg.devDependencies.lowlight === 'string',
+  JSON.stringify(pkg.dependencies ?? null))
 // The vendored selection must follow what the Host will list, or the bundle pays for
 // drawings no row can ever show. `HOST_TEXT_EXTENSIONS` in the vendor script and
 // `TEXT_EXTENSIONS` in the Host are two copies of one rule, so they are compared here.

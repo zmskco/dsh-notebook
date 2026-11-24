@@ -4,6 +4,7 @@
 
 - 目录树，绑定工作区，支持新建文件，新建文件夹，重命名，删除，刷新，打开资源管理器
 - 编辑区，支持多文件浏览，markdown编辑预览，字体，背景设置，字数统计，自动保存
+- 代码高亮，围栏代码块与源码文件都按语言着色，配色跟随四套纸张
 - 对话区，deepseek harness 原生对话框
 
 # 预览效果
@@ -52,3 +53,6 @@ MIT。
 面板内的工具栏线性图标来自 [Lucide](https://lucide.dev)（ISC）；
 
 目录树的类型图标来自 [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme)（MIT）；
+
+代码高亮来自 [highlight.js](https://highlightjs.org)（BSD 3-Clause）与 [lowlight](https://github.com/wooorm/lowlight)（MIT），
+许可文本见 `assets/highlight/`。

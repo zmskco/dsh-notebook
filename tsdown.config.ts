@@ -45,7 +45,11 @@ export default defineConfig({
    */
   deps: {
     neverBundle: ['react'],
-    alwaysBundle: [/^prosemirror-/],
+    // The editor core and the syntax colouring are forced in. Both ship as
+    // ordinary npm packages, and a specifier that leaked out of the bundle would
+    // throw at materialization, since the loader answers `require` only for its
+    // own rows.
+    alwaysBundle: [/^prosemirror-/, /^lowlight$/, /^highlight\.js(?:\/|$)/],
     // Nothing else is meant to stay external, so the "maybe you forgot to
     // externalize" hint has nothing to warn about.
     onlyBundle: false,

@@ -24,6 +24,7 @@ import { schema as basicSchema } from 'prosemirror-schema-basic'
 import { addListNodes } from 'prosemirror-schema-list'
 import { parseMarkdown } from './markdown'
 import type { Block, Span } from './markdown'
+import { normalizeLanguage } from './highlight'
 
 /**
  * A block this editor does not model, kept as the markdown it was written as.
@@ -45,11 +46,31 @@ const rawBlockSpec: NodeSpec = {
  *
  * `schema-basic`'s `code_block` has no `params` attribute — the info string after
  * the fence is only in the markdown example schema. Without it, opening and saving
- * a file would quietly drop ```json from every fenced block.
+ * a file would quietly drop ```json from every fenced block. The info string also
+ * travels into the DOM as `data-language`, which is what the stylesheet's corner
+ * label draws; `data-language-known` separates "a language this panel can colour"
+ * from "a word it carries but cannot colour", so the label never claims more than
+ * the colouring delivers. The colouring itself is a set of view decorations and
+ * adds nothing to this node.
+ *
+ * `parseDOM` reads the attribute back, so a fenced block copied inside the page
+ * and pasted again keeps its language — the clipboard round trip is the one path
+ * where a document would otherwise lose what the fence said.
  */
 const codeBlockSpec: NodeSpec = {
   ...(basicSchema.spec.nodes.get('code_block') ?? {}),
   attrs: { params: { default: '' } },
+  parseDOM: [{
+    tag: 'pre',
+    preserveWhitespace: 'full',
+    getAttrs: node => (node instanceof HTMLElement
+      ? { params: node.getAttribute('data-language') ?? '' }
+      : null),
+  }],
+  toDOM: node => ['pre', {
+    'data-language': String(node.attrs.params ?? ''),
+    'data-language-known': normalizeLanguage(String(node.attrs.params ?? '')) === undefined ? 'false' : 'true',
+  }, ['code', 0]],
 }
 
 const nodes = addListNodes(basicSchema.spec.nodes, 'paragraph block*', 'block')

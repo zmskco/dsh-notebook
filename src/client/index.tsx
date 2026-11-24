@@ -30,7 +30,21 @@ export { AUTOSAVE_MS, NotebookTab } from './studio/NotebookTab'
 export { editorControls, initialEditorMode, isMarkdownPath, nextEditorMode, parseMarkdown } from './state/markdown'
 // The document model: markdown in, markdown out, with ProseMirror in between.
 export { documentFromMarkdown, markdownFromDocument, schema } from './state/pm-document'
-export { editorKeyBindings, Wysiwyg } from './studio/Wysiwyg'
+export { editorKeyBindings, editorPlugins, Wysiwyg } from './studio/Wysiwyg'
+// Syntax colour: the model both surfaces draw from (pure, so the artifact check
+// drives the colouring as data), the offset mapping the rendered page uses, and
+// the source editor that puts colour behind its textarea.
+export {
+  HIGHLIGHT_CLASSES,
+  HIGHLIGHTED_LANGUAGES,
+  MAX_COLOURED_CHARS,
+  highlightCode,
+  highlightLanguages,
+  languageForPath,
+  normalizeLanguage,
+} from './state/highlight'
+export { codeColourRanges, codeHighlightPlugin } from './state/pm-highlight'
+export { layerText, SourceEditor } from './studio/SourceEditor'
 export {
   clampSize,
   DEFAULT_PREFS,

@@ -38,6 +38,11 @@ export const zh = {
   resizeChat: '拖动调整对话区宽度（也可用左右方向键）',
   writing: '写作',
   source: '源码',
+  /* The two things the source view says about its own colouring. Both are labels
+     on the page, not controls: they answer "why is this file one colour" without
+     asking the reader to open anything. */
+  plainText: '纯文本',
+  uncoloured: '未着色',
   fontSize: '字号',
   /* The picker is a row of single characters — 黑, 宋, 霞, 阿 — with the full
      family name on the button's title, because four long names in a 268px column
@@ -126,6 +131,8 @@ export const en: Record<StringKey, string> = {
   resizeChat: 'Drag to resize the conversation column (or use the arrow keys)',
   writing: 'Write',
   source: 'Source',
+  plainText: 'Plain text',
+  uncoloured: 'Not coloured',
   fontSize: 'Size',
   fontSystem: 'Hei',
   fontSong: 'Song',

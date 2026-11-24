@@ -57,6 +57,7 @@ import {
 } from '../state/tabs'
 import type { OpenFile } from '../state/tabs'
 import { TabStrip } from './TabStrip'
+import { SourceEditor } from './SourceEditor'
 import { Wysiwyg } from './Wysiwyg'
 import {
   FONT_IDS,
@@ -69,7 +70,7 @@ import { ChatIcon, CloseAllIcon, DeleteIcon, FilePlusIcon, FolderPlusIcon, Refre
 import { TreeIcon } from '../icons/material'
 import type { ProjectFileEntry } from '../../host/types'
 import type { StringKey, T } from '../strings'
-import { Button, ErrorNote, Grip, TextArea, TextInput } from '../ui'
+import { Button, ErrorNote, Grip, TextInput } from '../ui'
 
 export interface NotebookTabProps {
   t: T
@@ -1335,7 +1336,7 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
   ]
 
   // The page: paper colour, typeface and size travel as CSS variables, so the
-  // rendered document and the source textarea share one setting.
+  // rendered document and the source editor share one setting.
   const docStyle: React.CSSProperties & Record<string, string> = {
     '--dsh-notebook-font': FONT_STACKS[prefs.font],
     '--dsh-notebook-size': `${String(prefs.size)}px`,
@@ -1454,7 +1455,9 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
           React.createElement('div', { className: 'dsh-notebook-editorBody' },
             // The rendered page edits the tab's draft directly: `Wysiwyg` hands back
             // rebuilt markdown on every keystroke, so the count, the dirty flag and
-            // the save all mean the same thing in both modes.
+            // the save all mean the same thing in both modes. The source side is a
+            // textarea with a colour layer behind it (`SourceEditor`) — same buffer,
+            // same autosave, and a file whose bytes matter is never rewritten.
             rendered
               ? React.createElement(Wysiwyg, {
                 // The key names the *file* as well as the parse: switching tabs must
@@ -1464,12 +1467,13 @@ export function NotebookTab({ t, side, onSideResize, canChat, chatVisible, onTog
                 text: current.draft,
                 onChange: (markdown: string) => { edit(current.path, markdown) },
               })
-              : React.createElement(TextArea, {
+              : React.createElement(SourceEditor, {
+                path: current.path,
                 value: current.draft,
-                onChange: (value) => { edit(current.path, value) },
-                placeholder: current.path,
-                ariaLabel: current.path,
-                className: 'dsh-notebook-grow',
+                onChange: (text: string) => { edit(current.path, text) },
+                // The source view names its own grammar, or says why it has none.
+                plainLabel: t('plainText'),
+                uncolouredLabel: t('uncoloured'),
               }),
           ),
         ),
