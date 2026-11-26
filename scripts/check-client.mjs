@@ -1247,16 +1247,7 @@ check('an open-but-not-drawn tree row is marked differently from the drawn one',
 check('every colour the highlighting emits has a rule',
   HIGHLIGHT_CLASSES.every(name => css.includes(`.${name}`)),
   HIGHLIGHT_CLASSES.filter(name => !css.includes(`.${name}`)).join(','))
-check('the palette follows the paper, not the interface theme',
-  // Four papers, two syntax palettes: a dark ink on 黑夜 would vanish, and the paper is
-  // the surface being read.
-  ['plain', 'elegant', 'green'].every(id => css.includes(`[data-paper="${id}"]`))
-  && /\[data-paper="night"\]\{[^}]*--dsh-notebook-hl-keyword/.test(css)
-  && /\[data-paper="plain"\],[^{]*\{[^}]*--dsh-notebook-hl-keyword/.test(css), '')
-// Every colour the highlighting can draw has to be readable on every surface it can
-// land on, at the size code is drawn at. The worst surface is 绿荫's fence — the
-// darkest of the twelve — so checking against each paper's own two backgrounds covers
-// all of them. Ratio is WCAG 2.1: (lighter + 0.05) / (darker + 0.05).
+/** WCAG 2.1 relative luminance of an sRGB hex colour. */
 const relativeLuminance = (hex) => {
   const channel = (value) => {
     const s = value / 255
@@ -1265,6 +1256,7 @@ const relativeLuminance = (hex) => {
   const n = Number.parseInt(hex.slice(1), 16)
   return 0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255)
 }
+/** WCAG 2.1 contrast ratio: (lighter + 0.05) / (darker + 0.05). */
 const contrastRatio = (a, b) => {
   const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort((left, right) => right - left)
   return (light + 0.05) / (dark + 0.05)
@@ -1274,45 +1266,175 @@ const paperVars = (paper) => {
   const rule = new RegExp(`\\[data-paper="${paper}"\\]\\{([^}]*)\\}`).exec(css)?.[1] ?? ''
   return new Map([...rule.matchAll(/(--dsh-notebook-hl-[\w-]+)\s*:\s*(#[0-9a-fA-F]{6})/g)].map(match => [match[1], match[2]]))
 }
-/** The whole paper rule, for the surfaces those colours are drawn on. */
+/** The surfaces those colours are drawn on, from the same paper rule. */
 const paperSurface = (paper) => {
   const rule = new RegExp(`\\[data-paper="${paper}"\\]\\{([^}]*)\\}`).exec(css)?.[1] ?? ''
   const read = name => new RegExp(`${name}\\s*:\\s*(#[0-9a-fA-F]{6})`).exec(rule)?.[1]
   return { paper: read('--dsh-notebook-paper-bg'), fence: read('--dsh-notebook-paper-code') }
 }
-check('every syntax colour is readable on every paper it is drawn on',
+// The palettes are Dracula's, so they are asserted against Dracula's own values rather
+// than against a taste rule. Sources, read from the specification and the theme README:
+//   https://draculatheme.com/spec  ·  https://github.com/dracula/dracula-theme
+// If the theme revises a hex, this table is the one place to follow it.
+const DRACULA_COLOURS = {
+  background: '#282a36',
+  comment: '#6272a4',
+  red: '#ff5555',
+  orange: '#ffb86c',
+  yellow: '#f1fa8c',
+  green: '#50fa7b',
+  cyan: '#8be9fd',
+  purple: '#bd93f9',
+  pink: '#ff79c6',
+  foreground: '#f8f8f2',
+}
+const ALUCARD_COLOURS = {
+  background: '#fffbeb',
+  comment: '#6c664b',
+  red: '#cb3a2a',
+  orange: '#a34d14',
+  yellow: '#846e15',
+  green: '#14710a',
+  cyan: '#036a96',
+  purple: '#644ac9',
+  pink: '#a3144d',
+  foreground: '#1f1f1f',
+}
+// The role → theme-colour mapping, straight from the spec's Token Classification table.
+const DRACULA_ROLES = {
+  comment: 'comment',
+  meta: 'comment',
+  keyword: 'pink',
+  operator: 'pink',
+  title: 'green',
+  addition: 'green',
+  builtin: 'cyan',
+  attr: 'cyan',
+  regexp: 'cyan',
+  link: 'cyan',
+  string: 'yellow',
+  number: 'orange',
+  literal: 'orange',
+  symbol: 'purple',
+  variable: 'foreground',
+  deletion: 'red',
+}
+/** The palette a `data-paper` rule declares, keyed by role (not by custom property). */
+const paletteOf = (paper) => {
+  const vars = paperVars(paper)
+  const palette = new Map()
+  for (const [name, value] of vars) palette.set(name.replace('--dsh-notebook-hl-', ''), value.toLowerCase())
+  return palette
+}
+/** The light trio's palette: one rule lists all three papers. */
+const lightPalette = (() => {
+  const rule = /\[data-paper="plain"\],[^{]*\{([^}]*)\}/.exec(css)?.[1] ?? ''
+  const palette = new Map()
+  for (const match of rule.matchAll(/(--dsh-notebook-hl-[\w-]+)\s*:\s*(#[0-9a-fA-F]{6})/g)) {
+    palette.set(match[1].replace('--dsh-notebook-hl-', ''), match[2].toLowerCase())
+  }
+  return palette
+})()
+const nightPalette = paletteOf('night')
+/** The roles: everything but the two surface tokens. */
+const ROLES = Object.keys(DRACULA_ROLES)
+check('every syntax colour is one of the theme\'s own values',
+  // The requirement is fidelity: a colour that is not in the palette is not Dracula.
   (() => {
-    // The light trio shares one palette, declared on a rule listing all three names.
-    const shared = /\[data-paper="plain"\],[^{]*\{([^}]*)\}/.exec(css)?.[1] ?? ''
-    const sharedVars = new Map([...shared.matchAll(/(--dsh-notebook-hl-[\w-]+)\s*:\s*(#[0-9a-fA-F]{6})/g)].map(m => [m[1], m[2]]))
-    const plain = paperSurface('plain')
-    const elegant = paperSurface('elegant')
-    const green = paperSurface('green')
-    const night = paperSurface('night')
-    const surfaces = [
-      // [palette, the paper's background, the paper's fence background]
-      [sharedVars, plain.paper, plain.fence],
-      [sharedVars, elegant.paper, elegant.fence],
-      [sharedVars, green.paper, green.fence],
-      [paperVars('night'), night.paper, night.fence],
-    ]
-    const failures = []
-    for (const [palette, paper, fence] of surfaces) {
-      if (palette.size === 0 || paper === undefined || fence === undefined) {
-        failures.push('a palette or a surface is missing')
-        continue
-      }
-      for (const [name, value] of palette) {
-        for (const background of [paper, fence]) {
-          const ratio = contrastRatio(value, background)
-          // 4.5:1 is the WCAG AA threshold for the size code is drawn at.
-          if (ratio < 4.5) failures.push(`${name} ${value} on ${background} = ${ratio.toFixed(2)}`)
-        }
+    const official = new Set([...Object.values(DRACULA_COLOURS), ...Object.values(ALUCARD_COLOURS)])
+    const strays = []
+    for (const [label, palette] of [['light', lightPalette], ['night', nightPalette]]) {
+      for (const [role, value] of palette) {
+        if (!official.has(value)) strays.push(`${label}.${role}=${value}`)
       }
     }
-    if (failures.length > 0) console.log(`  ${failures.join('\n  ')}`)
-    return failures.length === 0
-  })(), 'a colour fails WCAG AA on a surface it is drawn on')
+    if (strays.length > 0) console.log(`  ${strays.join('\n  ')}`)
+    // Sixteen roles plus the background and foreground the code is drawn on.
+    return strays.length === 0 && lightPalette.size === 18 && nightPalette.size === 18
+  })(), 'a syntax colour is not from the Dracula or Alucard palette')
+check('each role draws the theme colour the specification gives it',
+  // The mapping is the spec's Token Classification table: keywords Pink, functions
+  // Green, types and support Cyan, strings Yellow, numbers Orange, comments Comment,
+  // variables Foreground, deletions Red.
+  (() => {
+    const missing = []
+    for (const [role, themeColour] of Object.entries(DRACULA_ROLES)) {
+      if (lightPalette.get(role) !== ALUCARD_COLOURS[themeColour].toLowerCase()) {
+        missing.push(`light.${role} should be Alucard ${themeColour} (${ALUCARD_COLOURS[themeColour]}), got ${lightPalette.get(role)}`)
+      }
+      if (nightPalette.get(role) !== DRACULA_COLOURS[themeColour].toLowerCase()) {
+        missing.push(`night.${role} should be Dracula ${themeColour} (${DRACULA_COLOURS[themeColour]}), got ${nightPalette.get(role)}`)
+      }
+    }
+    if (missing.length > 0) console.log(`  ${missing.join('\n  ')}`)
+    return missing.length === 0
+  })(), 'a role draws a colour the specification does not assign it')
+check('code is drawn on the theme\'s own background, not the paper\'s tint',
+  // The measurement that decided this: on 绿荫's old grey tint six Alucard roles fell
+  // under AA; on the theme's own #fffbeb none do. A fence, an inline run and the source
+  // editor all have to use it, or the palette is being quoted out of context.
+  lightPalette.get('bg') === ALUCARD_COLOURS.background.toLowerCase()
+  && nightPalette.get('bg') === DRACULA_COLOURS.background.toLowerCase()
+  && lightPalette.get('fg') === ALUCARD_COLOURS.foreground.toLowerCase()
+  && nightPalette.get('fg') === DRACULA_COLOURS.foreground.toLowerCase()
+  // The three code surfaces, each pointing at that token.
+  && /\.dsh-notebook-pm pre\{[^}]*background:var\(--dsh-notebook-hl-bg/.test(css)
+  && /\.dsh-notebook-pm code\{[^}]*background:var\(--dsh-notebook-hl-bg/.test(css)
+  && /\.dsh-notebook-src\[data-coloured="true"\]\{[^}]*background:var\(--dsh-notebook-hl-bg/.test(css)
+  // A plain-text file with no grammar keeps the paper: a theme surface with no theme
+  // colours on it would be decoration without a reason.
+  && !/\.dsh-notebook-src\{[^}]*background:var\(--dsh-notebook-hl-bg/.test(css), '')
+// Contrast is measured against the surface the tokens are actually drawn on: the
+// theme's own background, since that is what a fence, an inline run and the source
+// editor are painted with. The role tokens are checked there; the two surface tokens
+// are checked against themselves by construction.
+// Dracula's own comment colour is below 4.5:1 on Dracula's own background — that is
+// the theme, and the panel does not get to "fix" a name it is trying to reproduce.
+// What is enforced is that nothing is illegible (3:1 floor) and that the set of AA
+// misses is exactly the documented one, so a palette edit cannot quietly add more.
+const AA_EXCEPTIONS = new Set(['night:comment', 'night:meta'])
+const contrastPairs = (() => {
+  const pairs = []
+  for (const [label, palette] of [['light', lightPalette], ['night', nightPalette]]) {
+    const background = palette.get('bg')
+    if (background === undefined) continue
+    for (const role of ROLES) {
+      const value = palette.get(role)
+      if (value === undefined) continue
+      pairs.push({ label, role, value, background, ratio: contrastRatio(value, background) })
+    }
+  }
+  return pairs
+})()
+check('nothing the highlighting can draw is illegible on the code surface',
+  // 3:1 is the floor for large text and UI edges; below it the colour stops being a
+  // colour and becomes a smudge. This is the assertion a future palette edit must keep,
+  // whatever it does about AA.
+  (() => {
+    const bad = contrastPairs.filter(pair => pair.ratio < 3)
+    if (bad.length > 0) console.log(`  ${bad.map(p => `${p.label}:${p.role} ${p.value} on ${p.background} = ${p.ratio.toFixed(2)}`).join('\n  ')}`)
+    return bad.length === 0
+  })(), 'a syntax colour drops below 3:1 on the surface it is drawn on')
+check('the pairs below WCAG AA are exactly the documented ones',
+  // The theme's own values, not a rounded-off palette: what fails AA is named here, so
+  // it cannot grow without someone deciding to grow it.
+  (() => {
+    const misses = contrastPairs.filter(pair => pair.ratio < 4.5)
+      .map(pair => `${pair.label}:${pair.role}`).sort()
+    const documented = [...AA_EXCEPTIONS].sort()
+    const gained = misses.filter(miss => !AA_EXCEPTIONS.has(miss))
+    const healed = documented.filter(doc => !misses.includes(doc))
+    if (gained.length > 0) console.log(`  newly below AA: ${gained.join(', ')}`)
+    if (healed.length > 0) console.log(`  no longer below AA (update the table): ${healed.join(', ')}`)
+    return gained.length === 0 && healed.length === 0
+  })(), 'the set of sub-AA pairs changed')
+check('the darkest and lightest code surfaces stay legible',
+  // A direct statement of the two facts the palette choice rests on: Alucard clears AA
+  // on its own background, and Dracula clears 3:1 on its own.
+  contrastRatio(ALUCARD_COLOURS.yellow, ALUCARD_COLOURS.background) >= 4.5
+  && contrastRatio(DRACULA_COLOURS.comment, DRACULA_COLOURS.background) >= 3,
+  `alucard yellow ${contrastRatio(ALUCARD_COLOURS.yellow, ALUCARD_COLOURS.background).toFixed(2)}, `
+  + `dracula comment ${contrastRatio(DRACULA_COLOURS.comment, DRACULA_COLOURS.background).toFixed(2)}`)
 check('the light palette is the same values for all three light papers',
   // It is declared once, on a selector listing the three: one edit cannot leave 绿荫
   // behind, which is the paper whose background is darkest and first to fail contrast.
@@ -1323,18 +1445,42 @@ check('the light palette is the same values for all three light papers',
       // Exactly one rule carries a light palette: a second one would override it.
       && (css.match(/--dsh-notebook-hl-comment:/g) ?? []).length === 2
   })(), 'a light paper declares colours of its own')
-check('no two syntax colours are the same colour',
-  // A palette that draws a keyword and a string in one value is claiming a distinction
-  // it does not make.
+check('the roles collapse into theme colours exactly as the specification says',
+  // Dracula gives several roles one colour on purpose — numbers, constants and booleans
+  // are all Orange; support and built-ins are all Cyan. That is the theme, so this
+  // asserts the *collapse*, which is the opposite of the "every token is its own colour"
+  // rule an invented palette needs.
   (() => {
-    const light = /\[data-paper="plain"\],[^{]*\{([^}]*)\}/.exec(css)?.[1] ?? ''
-    const night = paperVars('night')
-    for (const rule of [light, [...night].map(([k, v]) => `${k}:${v}`).join(';')]) {
-      const values = [...rule.matchAll(/--dsh-notebook-hl-[\w-]+\s*:\s*(#[0-9a-fA-F]{6})/g)].map(match => match[1].toLowerCase())
-      if (new Set(values).size !== values.length) return false
+    /** role → theme colour name, for one palette. */
+    const collapse = (palette, colours) => {
+      const byValue = new Map(Object.entries(colours).map(([name, hex]) => [hex, name]))
+      const groups = new Map()
+      // Only the roles take part: bg and fg are the surface the roles are drawn on.
+      for (const role of ROLES) {
+        const value = palette.get(role)
+        if (value === undefined) return undefined
+        const themeColour = byValue.get(value)
+        if (themeColour === undefined) return undefined
+        if (!groups.has(themeColour)) groups.set(themeColour, [])
+        groups.get(themeColour).push(role)
+      }
+      return groups
     }
-    return true
-  })(), 'two tokens share a value')
+    const light = collapse(lightPalette, ALUCARD_COLOURS)
+    const night = collapse(nightPalette, DRACULA_COLOURS)
+    if (light === undefined || night === undefined) return false
+    // The expected grouping, from the role table itself — so this cannot disagree with it.
+    const expected = new Map()
+    for (const [role, themeColour] of Object.entries(DRACULA_ROLES)) {
+      if (!expected.has(themeColour)) expected.set(themeColour, [])
+      expected.get(themeColour).push(role)
+    }
+    const same = (actual, wanted) => [...wanted].every(([themeColour, roles]) => {
+      const got = [...(actual.get(themeColour) ?? [])].sort().join(',')
+      return got === [...roles].sort().join(',')
+    }) && actual.size === wanted.size
+    return same(light, expected) && same(night, expected)
+  })(), 'a role is drawn in a colour the specification does not group it under')
 check('a code block names its language, in the block\'s own top edge',
   // A label, not a tooltip: it is drawn, it sits in padding reserved for it so it never
   // covers the first line, and an info string with no grammar dims instead of claiming
@@ -1362,7 +1508,9 @@ check('the source editor draws its colour behind the text, in one box',
   && /\.dsh-notebook-srcText\{[^}]*white-space:pre-wrap/.test(css)
   && /\.dsh-notebook-srcText\{[^}]*tab-size:4/.test(css)
   && /\.dsh-notebook-srcInput\{[^}]*color:transparent/.test(css)
-  && /\.dsh-notebook-srcInput\{[^}]*caret-color:var\(--dsw-alias-label-primary\)/.test(css)
+  // The caret is the theme's foreground: it is the one thing the textarea still
+  // draws itself, and it has to be visible on the theme's own background.
+  && /\.dsh-notebook-srcInput\{[^}]*caret-color:var\(--dsh-notebook-hl-fg/.test(css)
   && /\.dsh-notebook-srcCode\{[^}]*pointer-events:none/.test(css), '')
 check('an input method composing a word is drawn, not hidden',
   // The pre-edit text is drawn by the textarea, whose glyphs are transparent: without

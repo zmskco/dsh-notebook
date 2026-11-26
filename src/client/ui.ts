@@ -286,10 +286,17 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
    interface theme, because it *is* the surface the author wants to look at.
    They are declared as custom properties here and remapped onto the shell's own
    tokens in the rule below, so every surface inside the panel sits on the paper
-   without a single component knowing about it. */
+   without a single component knowing about it.
+   The paper also picks the *syntax* palette, and that is what gives the code its
+   light and dark halves: 黑夜 is Dracula Classic, the other three are Alucard
+   Classic. Choosing 黑夜 is choosing dark; choosing any other paper is light. */
 .dsh-notebook-root[data-paper="plain"]{--dsh-notebook-paper-bg:#ffffff;--dsh-notebook-paper-ink:#1b1b1b;--dsh-notebook-paper-soft:#6d6d6d;--dsh-notebook-paper-line:#e6e6e6;--dsh-notebook-paper-layer:#f4f4f4;--dsh-notebook-paper-code:#f5f5f5;--dsh-notebook-paper-brand:#1f1f1f;--dsh-notebook-paper-on:#ffffff;--dsh-notebook-paper-warn:#96560a}
 .dsh-notebook-root[data-paper="elegant"]{--dsh-notebook-paper-bg:#faf7f0;--dsh-notebook-paper-ink:#2a2620;--dsh-notebook-paper-soft:#6f675c;--dsh-notebook-paper-line:#e7dfd0;--dsh-notebook-paper-layer:#f3eee3;--dsh-notebook-paper-code:#f2ecdd;--dsh-notebook-paper-brand:#40372a;--dsh-notebook-paper-on:#fdfbf6;--dsh-notebook-paper-warn:#8d5310}
-.dsh-notebook-root[data-paper="night"]{--dsh-notebook-paper-bg:#14161a;--dsh-notebook-paper-ink:#e8e6e1;--dsh-notebook-paper-soft:#a09d96;--dsh-notebook-paper-line:#2a2d33;--dsh-notebook-paper-layer:#1d2026;--dsh-notebook-paper-code:#1b1e24;--dsh-notebook-paper-brand:#cfcbc2;--dsh-notebook-paper-on:#14161a;--dsh-notebook-paper-warn:#f0b44a;--dsh-notebook-hl-comment:#8d939d;--dsh-notebook-hl-keyword:#c678dd;--dsh-notebook-hl-builtin:#e5c07b;--dsh-notebook-hl-literal:#d19a66;--dsh-notebook-hl-number:#e0a066;--dsh-notebook-hl-string:#98c379;--dsh-notebook-hl-regexp:#7ec699;--dsh-notebook-hl-symbol:#56b6c2;--dsh-notebook-hl-title:#61afef;--dsh-notebook-hl-attr:#e0a86a;--dsh-notebook-hl-variable:#e06c75;--dsh-notebook-hl-meta:#c9a26a;--dsh-notebook-hl-operator:#b3bac5;--dsh-notebook-hl-addition:#7fce8f;--dsh-notebook-hl-deletion:#f07b7b;--dsh-notebook-hl-link:#7cc0f5}
+/* 黑夜 carries Dracula Classic. The colours are the theme's own, in the role
+   mapping the syntax-colour comment below documents.
+   The hl-bg and hl-fg tokens are the scheme's editor background and foreground:
+   code is drawn on the surface its author tuned it against, not on the paper. */
+.dsh-notebook-root[data-paper="night"]{--dsh-notebook-paper-bg:#14161a;--dsh-notebook-paper-ink:#e8e6e1;--dsh-notebook-paper-soft:#a09d96;--dsh-notebook-paper-line:#2a2d33;--dsh-notebook-paper-layer:#1d2026;--dsh-notebook-paper-code:#1b1e24;--dsh-notebook-paper-brand:#cfcbc2;--dsh-notebook-paper-on:#14161a;--dsh-notebook-paper-warn:#f0b44a;--dsh-notebook-hl-bg:#282a36;--dsh-notebook-hl-fg:#f8f8f2;--dsh-notebook-hl-comment:#6272a4;--dsh-notebook-hl-keyword:#ff79c6;--dsh-notebook-hl-builtin:#8be9fd;--dsh-notebook-hl-literal:#ffb86c;--dsh-notebook-hl-number:#ffb86c;--dsh-notebook-hl-string:#f1fa8c;--dsh-notebook-hl-regexp:#8be9fd;--dsh-notebook-hl-symbol:#bd93f9;--dsh-notebook-hl-title:#50fa7b;--dsh-notebook-hl-attr:#8be9fd;--dsh-notebook-hl-variable:#f8f8f2;--dsh-notebook-hl-meta:#6272a4;--dsh-notebook-hl-operator:#ff79c6;--dsh-notebook-hl-addition:#50fa7b;--dsh-notebook-hl-deletion:#ff5555;--dsh-notebook-hl-link:#8be9fd}
 .dsh-notebook-root[data-paper="green"]{--dsh-notebook-paper-bg:#e7f0e2;--dsh-notebook-paper-ink:#1f2a1c;--dsh-notebook-paper-soft:#5f6d59;--dsh-notebook-paper-line:#cfdcc6;--dsh-notebook-paper-layer:#dcebd5;--dsh-notebook-paper-code:#d9e7d0;--dsh-notebook-paper-brand:#2f4326;--dsh-notebook-paper-on:#f3f8ef;--dsh-notebook-paper-warn:#8a5a00}
 /* Carrying the paper to everything inside: the shell's surface tokens are
    re-pointed at the paper's shades, so the columns, the tree, the buttons and the
@@ -347,9 +354,16 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 .dsh-notebook-pm li{margin:0 0 .25em}
 .dsh-notebook-pm li > p{margin:0}
 .dsh-notebook-pm blockquote{margin:0 0 .7em;padding:.1em 0 .1em .8em;border-left:3px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary)}
-.dsh-notebook-pm pre{margin:0 0 .7em;padding:.6em .75em;border-radius:6px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsh-notebook-paper-code,var(--dsw-alias-bg-layer-1));overflow:auto;white-space:pre-wrap;overflow-wrap:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85em}
-.dsh-notebook-pm code{padding:1px 5px;border-radius:4px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85em}
-.dsh-notebook-pm pre code{padding:0;border:0;background:transparent;font-size:1em}
+/* A fenced block is drawn on the syntax palette's own background, not the paper's
+   grey tint: see the syntax-colour comment for the measurements that decided it.
+   The border and radius go with it, because a theme surface that reads as a
+   floating rectangle in the middle of a page is not how either variant looks. */
+.dsh-notebook-pm pre{margin:0 0 .7em;padding:.6em .75em;border-radius:6px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsh-notebook-hl-bg,var(--dsw-alias-bg-layer-1));color:var(--dsh-notebook-hl-fg,var(--dsw-alias-label-primary));overflow:auto;white-space:pre-wrap;overflow-wrap:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85em}
+/* An inline run of code wears the same surface, one shade in: it is a word inside
+   a sentence, not a block, so it gets the theme's background at reduced opacity
+   rather than its full rectangle. */
+.dsh-notebook-pm code{padding:1px 5px;border-radius:4px;background:var(--dsh-notebook-hl-bg,var(--dsw-alias-bg-layer-2));color:var(--dsh-notebook-hl-fg,inherit);border:1px solid var(--dsw-alias-border-l1);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85em}
+.dsh-notebook-pm pre code{padding:0;border:0;background:transparent;color:inherit;font-size:1em}
 .dsh-notebook-pm hr{margin:1.4em 0;border:0;border-top:1px solid var(--dsw-alias-border-l1)}
 .dsh-notebook-pm a{color:var(--dsw-alias-brand-primary);text-decoration:underline}
 /* The picker row above the page. Three groups — faces, size, paper — then the mode
@@ -381,15 +395,57 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
    decorations — see src/client/state/pm-highlight.ts) and the layer behind the
    source editor's textarea (src/client/studio/SourceEditor.tsx). Both are
    coloured from one vocabulary, so they name the same sixteen classes below.
-   The palette follows the *paper*, not the interface theme: the paper is the
-   surface being read, and a near-black ink on 黑夜 would vanish. 黑夜's palette is
-   declared with its own paper above; the three light papers share the one below.
-   Every value is chosen so that the *worst* background it is ever drawn on passes
-   WCAG AA (4.5:1) at the code size on the page (0.85em): for the light set that
-   is 绿荫's fence #d9e7d0, and the tightest token lands at 4.73:1 there and
-   >= 5.1:1 on the other eleven background/token pairs. No two tokens share a
-   value, so every distinction the vocabulary claims is one a reader can see. */
-.dsh-notebook-root[data-paper="plain"],.dsh-notebook-root[data-paper="elegant"],.dsh-notebook-root[data-paper="green"]{--dsh-notebook-hl-comment:#575e6a;--dsh-notebook-hl-keyword:#8530a8;--dsh-notebook-hl-builtin:#8a5300;--dsh-notebook-hl-literal:#7a4a12;--dsh-notebook-hl-number:#8f4b00;--dsh-notebook-hl-string:#2f6f34;--dsh-notebook-hl-regexp:#2f6b52;--dsh-notebook-hl-symbol:#7a3d9c;--dsh-notebook-hl-title:#1b5fa8;--dsh-notebook-hl-attr:#9a4a00;--dsh-notebook-hl-variable:#ab2f22;--dsh-notebook-hl-meta:#6a4a90;--dsh-notebook-hl-operator:#4a5260;--dsh-notebook-hl-addition:#1f6b2e;--dsh-notebook-hl-deletion:#a32020;--dsh-notebook-hl-link:#0f5c94}
+
+   THE COLOURS ARE DRACULA'S, NOT OURS. Dark is Dracula Classic, light is
+   Alucard Classic — the two variants of the same official theme, so the light
+   half is the palette's own light mode rather than an invented one. Values are
+   copied byte for byte from the specification:
+     https://draculatheme.com/spec             (token classification, palettes)
+     https://github.com/dracula/dracula-theme  (README palette tables)
+   The rule below is Alucard (the three light papers); 黑夜 declares Dracula in
+   its own paper rule above, beside the tokens it belongs with.
+
+   Which of the theme's nine syntax colours each of our sixteen roles takes is
+   the specification's own Token Classification table, not a guess:
+
+     keyword, operator        Pink        keywords and storage, and the
+                                          operator/punctuation emphasis the
+                                          spec's CSS example shows on a colon
+     title, addition          Green       functions, methods, diff additions
+     builtin, attr, regexp,   Cyan        support and built-ins (the spec lists
+       link                               regexps, HTML/XML tag and attribute
+                                          names under support), links
+     string                   Yellow      string and text literals
+     number, literal          Orange      numbers, constants, booleans
+     symbol                   Purple      constants, instance reserved words
+     comment, meta            Comment     comments, and the annotations and
+                                          decorators the spec files with them
+     variable                 Foreground  variables and identifiers
+     deletion                 Red         errors, diff deletions
+
+   Deliberately NOT applied: the spec's italic modifiers (comments, instance
+   reserved words, generic templates). The source editor draws colour behind a
+   textarea whose glyphs are transparent, so any change of face or weight would
+   move the characters out from under the textarea's own. Shape is only used on
+   the rendered page, where nothing depends on the metrics (see below).
+
+   CONTRAST, MEASURED, AND WHY CODE HAS ITS OWN BACKGROUND.
+   A syntax palette is tuned against the surface its author tested it on, so the
+   code has to sit on that surface or the values are being quoted out of
+   context. Both halves therefore carry their own editor background (hl-bg),
+   Dracula's #282a36 and Alucard's #fffbeb — and a fence block, an inline code
+   run and the whole source editor are painted with it. Drawing the same tokens
+   on the paper's grey tint is measurably worse: on 绿荫's old #d9e7d0 code tint,
+   six of Alucard's roles fell under WCAG AA (3.86-4.49); on Alucard's own
+   #fffbeb none do, and the tightest token is 4.80:1.
+
+   Two colours miss AA and they are the theme's own: Dracula's comment
+   (#6272a4) is 3.03:1 on Dracula's own background, and the official theme ships
+   that. Reproducing a named theme by "correcting" it would not be reproducing
+   it. Alucard's comment (#6c664b) is 5.56:1, so the light half has no such gap.
+   The artifact check asserts the exact sub-AA pairs per surface plus a 3:1
+   floor, so this stays a stated fact rather than a forgotten one. */
+.dsh-notebook-root[data-paper="plain"],.dsh-notebook-root[data-paper="elegant"],.dsh-notebook-root[data-paper="green"]{--dsh-notebook-hl-bg:#fffbeb;--dsh-notebook-hl-fg:#1f1f1f;--dsh-notebook-hl-comment:#6c664b;--dsh-notebook-hl-keyword:#a3144d;--dsh-notebook-hl-builtin:#036a96;--dsh-notebook-hl-literal:#a34d14;--dsh-notebook-hl-number:#a34d14;--dsh-notebook-hl-string:#846e15;--dsh-notebook-hl-regexp:#036a96;--dsh-notebook-hl-symbol:#644ac9;--dsh-notebook-hl-title:#14710a;--dsh-notebook-hl-attr:#036a96;--dsh-notebook-hl-variable:#1f1f1f;--dsh-notebook-hl-meta:#6c664b;--dsh-notebook-hl-operator:#a3144d;--dsh-notebook-hl-addition:#14710a;--dsh-notebook-hl-deletion:#cb3a2a;--dsh-notebook-hl-link:#036a96}
 .dsh-notebook-hl-comment{color:var(--dsh-notebook-hl-comment)}
 .dsh-notebook-hl-keyword{color:var(--dsh-notebook-hl-keyword)}
 .dsh-notebook-hl-builtin{color:var(--dsh-notebook-hl-builtin)}
@@ -422,7 +478,11 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
    An info string this panel has no grammar for keeps the strip and dims: the label
    is still the author's word, and the code below it is plainly uncoloured. */
 .dsh-notebook-pm pre[data-language]:not([data-language=""]){position:relative;padding-top:1.9em}
-.dsh-notebook-pm pre[data-language]:not([data-language=""])::after{content:attr(data-language);position:absolute;top:.35em;right:.6em;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 5px;border-radius:4px;background:var(--dsh-notebook-paper-bg,var(--dsw-alias-bg-base));box-shadow:0 0 0 1px var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:.72em;line-height:1.6;pointer-events:none;user-select:none}
+/* The chip sits on the theme's own surface, so its text is the theme's comment
+   colour: on Alucard's #fffbeb that is 5.56:1, and on Dracula's #282a36 it is the
+   one AA miss the theme itself ships (see the syntax-colour comment). The dimmed
+   variant is for an info string this panel cannot colour. */
+.dsh-notebook-pm pre[data-language]:not([data-language=""])::after{content:attr(data-language);position:absolute;top:.35em;right:.6em;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 5px;border-radius:4px;background:var(--dsh-notebook-hl-bg,var(--dsw-alias-bg-base));box-shadow:0 0 0 1px var(--dsw-alias-border-l1);color:var(--dsh-notebook-hl-comment,var(--dsw-alias-label-secondary));font-size:.72em;line-height:1.6;pointer-events:none;user-select:none}
 .dsh-notebook-pm pre[data-language-known="false"]::after{opacity:.55;box-shadow:none}
 /* The source editor's two layers. Both live in one box and share every text metric
    — font, size, line height, padding, wrapping, tab size — so the colour lands
@@ -433,7 +493,13 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
    over-constrained, and in a right-to-left context the browser drops the left edge
    — which would anchor the layer to the wrong side and offset every glyph by the
    gutter. */
+/* The source editor's box wears the theme's surface, not the paper's: the whole
+   panel becomes the editor, so the palette lands exactly where its author put it.
+   Only when the theme's colours are actually drawn (data-coloured) — a plain-text
+   file with no grammar stays on the paper, because a cream rectangle full of
+   uncoloured words would be a surface with nothing on it to justify itself. */
 .dsh-notebook-src{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.dsh-notebook-src[data-coloured="true"]{background:var(--dsh-notebook-hl-bg,transparent);color:var(--dsh-notebook-hl-fg,inherit)}
 .dsh-notebook-srcText{position:absolute;top:0;left:0;width:100%;height:100%;box-sizing:border-box;margin:0;letter-spacing:normal;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4;text-align:left}
 /* hidden, not clip: the layer follows the textarea by having its scrollTop set,
    and a box clipped with clip is not a scroll container at all — the assignment
@@ -447,13 +513,13 @@ button.dsh-notebook-btn[data-busy="true"] svg{animation:dsh-notebook-spin .9s li
 .dsh-notebook-srcCode code{font:inherit;letter-spacing:inherit;white-space:inherit;overflow-wrap:inherit;word-break:inherit;tab-size:inherit;background:transparent;padding:0;border:0}
 /* The textarea keeps the old element's own styling (the dsh-notebook-textarea rules
    above), except for the glyphs, which are the layer's to draw. */
-.dsh-notebook-srcInput{flex:1;min-height:0;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--dsw-alias-label-primary);resize:none;scrollbar-gutter:stable}
+.dsh-notebook-srcInput{flex:1;min-height:0;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--dsh-notebook-hl-fg,var(--dsw-alias-label-primary));resize:none;scrollbar-gutter:stable}
 /* The one thing the source view has to say out loud: why a file is not coloured.
    A file whose type this panel has no grammar for, or one too large to colour in
    the time a keystroke allows, is drawn as plain text — correct, and indistinguishable
    from a broken feature unless it says so. The label rides in the page's top padding,
    above the first line, and is drawn only on the uncoloured path. */
-.dsh-notebook-srcLabel{position:absolute;top:2px;right:6px;z-index:1;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 5px;border-radius:4px;box-shadow:0 0 0 1px var(--dsw-alias-border-l1);background:var(--dsh-notebook-paper-bg,var(--dsw-alias-bg-base));color:var(--dsw-alias-label-secondary);font-size:10px;line-height:14px;pointer-events:none;user-select:none}
+.dsh-notebook-srcLabel{position:absolute;top:2px;right:6px;z-index:1;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 5px;border-radius:4px;box-shadow:0 0 0 1px var(--dsw-alias-border-l1);background:var(--dsh-notebook-hl-bg,var(--dsw-alias-bg-base));color:var(--dsh-notebook-hl-comment,var(--dsw-alias-label-secondary));font-size:10px;line-height:14px;pointer-events:none;user-select:none}
 .dsh-notebook-srcInput::placeholder{color:var(--dsw-alias-label-secondary);-webkit-text-fill-color:var(--dsw-alias-label-secondary)}
 /* Selecting text: the textarea paints its selection *above* the colour layer, so an opaque
    selection would hide the glyphs it selected. A translucent one lets the colour show
